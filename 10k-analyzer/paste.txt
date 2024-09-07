@@ -9,11 +9,28 @@ src/
     setupTests.js
     logo.svg
     App.js
+    contexts/
+        AuthContext.js
+    utils/
+        analysisHelpers.js
     components/
+        Layout.js
+        Results.js
         Header.js
+        Results.module.css
         Header.module.css
+        ProtectedRoute.js
+        Analysis/
+            ChatWindow.js
+            Analysis.js
+            AnalysisCard.js
+            Analysis.module.css
     pages/
+        Login.module.css
+        Dashboard.module.css
         Home.js
+        Login.js
+        Dashboard.js
         Home.module.css
 ========================================
 
@@ -40,45 +57,97 @@ export default reportWebVitals;
 
 File: App.css
 ----------------------------------------
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
+
 .App {
-  text-align: center;
-}
-
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
+  font-family: 'Poppins', sans-serif;
+  color: #2c3e50;
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
+  position: relative;
+}
+
+.background-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  position: relative;
+  z-index: 1;
+}
+
+.btn {
+  background: linear-gradient(45deg, #3498db, #2980b9);
   color: white;
+  border: none;
+  padding: 0.8rem 1.5rem;
+  font-size: 1rem;
+  border-radius: 25px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-block;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-.App-link {
-  color: #61dafb;
+.btn:hover {
+  background: linear-gradient(45deg, #2980b9, #3498db);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
+.card {
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 10px;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+  padding: 2rem;
+  margin-bottom: 2rem;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(5px);
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+}
+
+.title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  background: linear-gradient(45deg, #3498db, #2980b9);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.subtitle {
+  font-size: 1.2rem;
+  color: #7f8c8d;
+  margin-bottom: 2rem;
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0px);
   }
-  to {
-    transform: rotate(360deg);
+  50% {
+    transform: translateY(-10px);
+  }
+  100% {
+    transform: translateY(0px);
   }
 }
 
+.float-animation {
+  animation: float 4s ease-in-out infinite;
+}
 ========================================
 
 File: index.js
@@ -98,9 +167,10 @@ ReactDOM.render(
 
 File: index.css
 ----------------------------------------
+/* index.css */
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -110,6 +180,38 @@ body {
 
 * {
   box-sizing: border-box;
+}
+
+:root {
+  --primary-color: #3498db;
+  --secondary-color: #2980b9;
+  --text-color: #2c3e50;
+  --background-color: #f5f6fa;
+  --card-background: #ffffff;
+  --shadow-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Smooth scrolling for the entire page */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background-color);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--primary-color);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--secondary-color);
 }
 ========================================
 
@@ -138,37 +240,288 @@ import '@testing-library/jest-dom';
 
 File: App.js
 ----------------------------------------
-import React from 'react';
-import Header from './components/Header';
+import React, { useEffect, useRef } from 'react';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { AuthProvider } from './contexts/AuthContext';
+import Layout from './components/Layout';
+import ProtectedRoute from './components/ProtectedRoute';
 import Home from './pages/Home';
+import InteractiveAnalysis from './components/Analysis/Analysis';
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
+import './App.css';
 
 function App() {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    let animationFrameId;
+
+    const resizeCanvas = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    const particles = [];
+    const particleCount = 100;
+
+    for (let i = 0; i < particleCount; i++) {
+      particles.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        radius: Math.random() * 2 + 1,
+        dx: (Math.random() - 0.5) * 0.5,
+        dy: (Math.random() - 0.5) * 0.5,
+      });
+    }
+
+    const drawParticles = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = 'rgba(52, 152, 219, 0.5)';
+      ctx.beginPath();
+      for (let i = 0; i < particleCount; i++) {
+        const p = particles[i];
+        ctx.moveTo(p.x, p.y);
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2, true);
+      }
+      ctx.fill();
+      moveParticles();
+    };
+
+    const moveParticles = () => {
+      for (let i = 0; i < particleCount; i++) {
+        const p = particles[i];
+        p.x += p.dx;
+        p.y += p.dy;
+        if (p.x < 0 || p.x > canvas.width) p.dx = -p.dx;
+        if (p.y < 0 || p.y > canvas.height) p.dy = -p.dy;
+      }
+    };
+
+    const animate = () => {
+      drawParticles();
+      animationFrameId = requestAnimationFrame(animate);
+    };
+
+    animate();
+
+    return () => {
+      window.removeEventListener('resize', resizeCanvas);
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, []);
+
   return (
-    <div className="App">
-      <Header />
-      <main>
-        <Home />
-      </main>
-    </div>
+    <AuthProvider>
+      <Router>
+        <div className="App">
+          <canvas ref={canvasRef} className="background-canvas" />
+          <Layout>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/login" element={<Login />} />
+              <Route element={<ProtectedRoute />}>
+                <Route path="/analysis" element={<InteractiveAnalysis />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+              </Route>
+            </Routes>
+          </Layout>
+        </div>
+      </Router>
+    </AuthProvider>
   );
 }
 
 export default App;
 ========================================
 
+File: contexts/AuthContext.js
+----------------------------------------
+import React, { createContext, useState, useContext, useEffect } from 'react';
+
+const AuthContext = createContext(null);
+
+export function AuthProvider({ children }) {
+  const [user, setUser] = useState(null);
+
+  // Auto-login effect
+  useEffect(() => {
+    // Automatically set a mock user
+    setUser({ email: 'user@example.com' });
+  }, []);
+
+  const login = (email, password) => {
+    // For now, just set the user without any real authentication
+    setUser({ email });
+  };
+
+  const logout = () => {
+    setUser(null);
+  };
+
+  return (
+    <AuthContext.Provider value={{ user, login, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuth() {
+  return useContext(AuthContext);
+}
+========================================
+
+File: utils/analysisHelpers.js
+----------------------------------------
+export const processMessage = (message) => {
+    if (message.toLowerCase().includes('analyze apple')) {
+      return 'Analyzing Apple (AAPL) stock...';
+    } else if (message.toLowerCase().includes('compare tesla and ford')) {
+      return 'Analyzing Tesla (TSLA) vs Ford (F) stocks...';
+    }
+    return 'I\'m sorry, I don\'t understand that command. Try asking to analyze a specific stock or compare two stocks.';
+  };
+  
+  export const triggerAnalysis = (subject) => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve();
+      }, 5000);
+    });
+  };
+========================================
+
+File: components/Layout.js
+----------------------------------------
+import React from 'react';
+import Header from './Header';
+
+function Layout({ children }) {
+  return (
+    <div>
+      <Header />
+      <main style={{ padding: '2rem' }}>
+        {children}
+      </main>
+    </div>
+  );
+}
+
+export default Layout;
+========================================
+
+File: components/Results.js
+----------------------------------------
+import React from 'react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import styles from './Results.module.css';
+
+function Results({ data }) {
+  const chartData = [
+    { name: 'Revenue Growth', value: data.revenueGrowth },
+    { name: 'Profit Margin', value: data.profitMargin },
+    { name: 'Debt to Equity', value: data.debtToEquity },
+    { name: 'Current Ratio', value: data.currentRatio },
+  ];
+
+  return (
+    <div className={styles.container}>
+      <h2 className={styles.title}>Analysis Results for {data.companyName}</h2>
+      <div className={styles.resultItem}>
+        <strong>Financial Health:</strong> {data.financialHealth}
+      </div>
+      <div className={styles.resultItem}>
+        <strong>Growth Prospects:</strong> {data.growthProspects}
+      </div>
+      <div className={styles.chartContainer}>
+        <ResponsiveContainer width="100%" height={300}>
+          <BarChart data={chartData}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="name" />
+            <YAxis />
+            <Tooltip />
+            <Legend />
+            <Bar dataKey="value" fill="#8884d8" />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+      <div className={styles.resultItem}>
+        <strong>Key Risks:</strong>
+        <ul>
+          {data.risks.map((risk, index) => (
+            <li key={index}>{risk}</li>
+          ))}
+        </ul>
+      </div>
+      <div className={styles.recommendation}>
+        <strong>Recommendation:</strong> {data.recommendation}
+      </div>
+    </div>
+  );
+}
+
+export default Results;
+========================================
+
 File: components/Header.js
 ----------------------------------------
 import React from 'react';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import styles from './Header.module.css';
+import { Home, BarChart2, LogOut, LogIn } from 'lucide-react';
 
 function Header() {
+  const { user, logout } = useAuth();
+
   return (
     <header className={styles.header}>
-      <div className={styles.logo}>10-K Analyzer</div>
+      <div className={styles.logo}>
+        <BarChart2 className={styles.logoIcon} />
+        <span>10-K Analyzer</span>
+      </div>
       <nav className={styles.nav}>
         <ul>
-          <li><a href="/">Home</a></li>
-          <li><a href="/analysis">Analysis</a></li>
+          <li>
+            <Link to="/" className={styles.navLink}>
+              <Home className={styles.navIcon} />
+              <span>Home</span>
+            </Link>
+          </li>
+          {user ? (
+            <>
+              <li>
+                <Link to="/dashboard" className={styles.navLink}>
+                  <BarChart2 className={styles.navIcon} />
+                  <span>Dashboard</span>
+                </Link>
+              </li>
+              <li>
+                <Link to="/analysis" className={styles.navLink}>
+                  <BarChart2 className={styles.navIcon} />
+                  <span>Analysis</span>
+                </Link>
+              </li>
+              <li>
+                <button onClick={logout} className={styles.logoutButton}>
+                  <LogOut className={styles.navIcon} />
+                  <span>Logout</span>
+                </button>
+              </li>
+            </>
+          ) : (
+            <li>
+              <Link to="/login" className={styles.navLink}>
+                <LogIn className={styles.navIcon} />
+                <span>Login</span>
+              </Link>
+            </li>
+          )}
         </ul>
       </nav>
     </header>
@@ -178,85 +531,581 @@ function Header() {
 export default Header;
 ========================================
 
-File: components/Header.module.css
-----------------------------------------
-.header {
-    background-color: #2c3e50;
-    padding: 1rem 2rem;
-    color: white;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  
-  .logo {
-    font-size: 1.5rem;
-    font-weight: bold;
-  }
-  
-  .nav ul {
-    list-style-type: none;
-    display: flex;
-    gap: 1rem;
-  }
-  
-  .nav a {
-    color: white;
-    text-decoration: none;
-    transition: color 0.3s ease;
-  }
-  
-  .nav a:hover {
-    color: #3498db;
-  }
-========================================
-
-File: pages/Home.js
-----------------------------------------
-import React from 'react';
-import styles from './Home.module.css';
-
-function Home() {
-  return (
-    <div className={styles.container}>
-      <h1 className={styles.title}>Welcome to 10-K Analyzer</h1>
-      <p className={styles.subtitle}>Harness the power of AI to analyze 10-K reports and get data-driven investment recommendations.</p>
-      <button className={styles.button}>Start Your Analysis</button>
-    </div>
-  );
-}
-
-export default Home;
-========================================
-
-File: pages/Home.module.css
+File: components/Results.module.css
 ----------------------------------------
 .container {
-    max-width: 800px;
-    margin: 2rem auto;
-    padding: 0 1rem;
-    text-align: center;
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
   
   .title {
-    font-size: 2.5rem;
+    font-size: 1.5rem;
     color: #2c3e50;
     margin-bottom: 1rem;
   }
   
-  .subtitle {
-    font-size: 1.2rem;
+  .resultItem {
+    margin-bottom: 1rem;
+  }
+  
+  .resultItem strong {
     color: #34495e;
+  }
+  
+  .resultItem ul {
+    margin-top: 0.5rem;
+    padding-left: 1.5rem;
+  }
+  
+  .recommendation {
+    margin-top: 1.5rem;
+    font-size: 1.2rem;
+    color: #2980b9;
+  }
+
+  .chartContainer {
+    margin-top: 2rem;
     margin-bottom: 2rem;
+    height: 300px;
+  }
+========================================
+
+File: components/Header.module.css
+----------------------------------------
+.header {
+  background: linear-gradient(135deg, #3498db, #2980b9);
+  padding: 1rem 2rem;
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.logo {
+  font-size: 1.5rem;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+}
+
+.logoIcon {
+  margin-right: 0.5rem;
+}
+
+.nav ul {
+  list-style-type: none;
+  display: flex;
+  gap: 1.5rem;
+  margin: 0;
+  padding: 0;
+}
+
+.navLink, .logoutButton {
+  color: white;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+
+.navIcon {
+  margin-right: 0.5rem;
+}
+
+.navLink:hover, .logoutButton:hover {
+  color: #ecf0f1;
+  transform: translateY(-2px);
+}
+
+.logoutButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0;
+}
+
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .nav {
+    margin-top: 1rem;
+    width: 100%;
+  }
+
+  .nav ul {
+    flex-direction: column;
+    gap: 1rem;
+  }
+}
+========================================
+
+File: components/ProtectedRoute.js
+----------------------------------------
+import React from 'react';
+import { Navigate, Outlet } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+
+function ProtectedRoute() {
+  const { user } = useAuth();
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return <Outlet />;
+}
+
+export default ProtectedRoute;
+========================================
+
+File: components/Analysis/ChatWindow.js
+----------------------------------------
+import React, { useState, useRef, useEffect } from 'react';
+import { MessageSquare, Send } from 'lucide-react';
+import styles from './Analysis.module.css';
+
+const ChatWindow = ({ messages, onNewMessage }) => {
+  const [input, setInput] = useState('');
+  const chatRef = useRef(null);
+
+  useEffect(() => {
+    if (chatRef.current) {
+      chatRef.current.scrollTop = chatRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (input.trim()) {
+      onNewMessage(input);
+      setInput('');
+    }
+  };
+
+  return (
+    <div className={styles.chatWindow}>
+      <div className={styles.chatHeader}>
+        <MessageSquare className={styles.chatIcon} />
+        <h2 className={styles.chatTitle}>AI Financial Assistant</h2>
+      </div>
+      <div ref={chatRef} className={styles.messageContainer}>
+        {messages.map((msg, idx) => (
+          <div key={idx} className={`${styles.message} ${styles[msg.sender]}`}>
+            {msg.text}
+          </div>
+        ))}
+      </div>
+      <form onSubmit={handleSubmit} className={styles.inputForm}>
+        <input
+          type="text"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          className={styles.input}
+          placeholder="Ask about financial analysis..."
+        />
+        <button type="submit" className={styles.sendButton}>
+          <Send className={styles.sendIcon} />
+        </button>
+      </form>
+    </div>
+  );
+};
+
+export default ChatWindow;
+========================================
+
+File: components/Analysis/Analysis.js
+----------------------------------------
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Loader, MessageSquare, BarChart2 } from 'lucide-react';
+import styles from './Analysis.module.css';
+import AnalysisCard from './AnalysisCard';
+import ChatWindow from './ChatWindow';
+import { processMessage, triggerAnalysis } from '../../utils/analysisHelpers';
+
+const Analysis = () => {
+  const [messages, setMessages] = useState([]);
+  const [analyses, setAnalyses] = useState([]);
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: { 
+      opacity: 1,
+      transition: { 
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: { 
+      y: 0, 
+      opacity: 1,
+      transition: { 
+        type: "spring",
+        stiffness: 100
+      }
+    }
+  };
+
+  const handleNewMessage = (message) => {
+    setMessages(prev => [...prev, { text: message, sender: 'user' }]);
+    const response = processMessage(message);
+    setMessages(prev => [...prev, { text: response, sender: 'ai' }]);
+    
+    if (response.includes('Analyzing')) {
+      const subject = response.split('Analyzing ')[1].split('...')[0];
+      handleNewAnalysis(subject);
+    }
+  };
+
+  const handleNewAnalysis = (subject) => {
+    setAnalyses(prev => [...prev, { subject, status: 'pending' }]);
+    setIsProcessing(true);
+
+    triggerAnalysis(subject).then(() => {
+      setAnalyses(prev => 
+        prev.map(a => a.subject === subject ? { ...a, status: 'complete' } : a)
+      );
+      setIsProcessing(false);
+    });
+  };
+
+  return (
+    <motion.div 
+      className={styles.container}
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
+      <motion.div className={styles.gridContainer} variants={itemVariants}>
+        <h2 className={styles.title}>
+          <BarChart2 className={styles.titleIcon} />
+          Analysis Results
+        </h2>
+        <motion.div className={styles.grid}>
+          <AnimatePresence>
+            {analyses.map((analysis, idx) => (
+              <AnalysisCard key={idx} analysis={analysis} />
+            ))}
+          </AnimatePresence>
+        </motion.div>
+        {isProcessing && (
+          <motion.div className={styles.processingIndicator} variants={itemVariants}>
+            <Loader className={styles.spinner} />
+            <p>Processing analysis...</p>
+          </motion.div>
+        )}
+      </motion.div>
+      <motion.div variants={itemVariants}>
+        <ChatWindow messages={messages} onNewMessage={handleNewMessage} />
+      </motion.div>
+    </motion.div>
+  );
+};
+
+export default Analysis;
+========================================
+
+File: components/Analysis/AnalysisCard.js
+----------------------------------------
+import React from 'react';
+import { motion } from 'framer-motion';
+import { BarChart2, CheckCircle, Loader } from 'lucide-react';
+import styles from './Analysis.module.css';
+
+const AnalysisCard = ({ analysis }) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.8 }}
+      transition={{ type: "spring", stiffness: 100 }}
+      className={styles.card}
+    >
+      <div className={styles.cardHeader}>
+        <BarChart2 className={styles.cardIcon} />
+        <h3 className={styles.cardTitle}>{analysis.subject}</h3>
+      </div>
+      <div className={styles.cardContent}>
+        {analysis.status === 'pending' ? (
+          <div className={styles.cardStatus}>
+            <Loader className={styles.statusIcon} />
+            <span>Analyzing...</span>
+          </div>
+        ) : (
+          <div className={styles.cardStatus}>
+            <CheckCircle className={styles.statusIcon} />
+            <span>Analysis complete</span>
+          </div>
+        )}
+      </div>
+    </motion.div>
+  );
+};
+
+export default AnalysisCard;
+========================================
+
+File: components/Analysis/Analysis.module.css
+----------------------------------------
+.container {
+  display: flex;
+  height: calc(100vh - 64px);
+  background-color: var(--bg-color, #f0f2f5);
+  overflow: hidden;
+  padding: 2rem;
+  gap: 2rem;
+}
+
+.gridContainer {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 2rem;
+}
+
+.title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 2rem;
+  color: var(--text-color, #2c3e50);
+  display: flex;
+  align-items: center;
+}
+
+.titleIcon {
+  margin-right: 1rem;
+  color: var(--primary-color, #3498db);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 2rem;
+  padding: 1rem;
+  background-color: var(--card-bg-color, rgba(255, 255, 255, 0.1));
+  border-radius: 15px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
+}
+
+.processingIndicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background-color: var(--card-bg-color, rgba(255, 255, 255, 0.2));
+  border-radius: 10px;
+  margin-top: 2rem;
+  backdrop-filter: blur(5px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+  margin-right: 1rem;
+  color: var(--primary-color, #3498db);
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Chat Window Styles */
+.chatWindow {
+  width: 35%;
+  min-width: 320px;
+  max-width: 420px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--card-bg-color, rgba(255, 255, 255, 0.1));
+  border-radius: 15px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.chatHeader {
+  background: linear-gradient(135deg, var(--primary-color, #3498db), var(--secondary-color, #2980b9));
+  color: white;
+  padding: 1.25rem;
+  display: flex;
+  align-items: center;
+}
+
+.chatIcon {
+  margin-right: 0.75rem;
+}
+
+.chatTitle {
+  font-size: 1.3rem;
+  margin: 0;
+  font-weight: 600;
+}
+
+.messageContainer {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.25rem;
+  background-color: var(--chat-bg-color, #f8f9fa);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.message {
+  max-width: 85%;
+  margin-bottom: 1.25rem;
+  padding: 1rem 1.25rem;
+  border-radius: 18px;
+  line-height: 1.5;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.message:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.user {
+  background: linear-gradient(135deg, var(--primary-color, #3498db), var(--secondary-color, #2980b9));
+  color: white;
+  align-self: flex-end;
+  margin-left: auto;
+}
+
+.ai {
+  background-color: var(--ai-message-color, #ecf0f1);
+  color: var(--text-color, #2c3e50);
+}
+
+.inputForm {
+  padding: 1.25rem;
+  background-color: var(--input-bg-color, #fff);
+  border-top: 1px solid var(--border-color, #e5e7eb);
+  display: flex;
+  align-items: center;
+}
+
+.input {
+  flex: 1;
+  padding: 1rem;
+  font-size: 1rem;
+  border: 2px solid var(--border-color, #bdc3c7);
+  border-radius: 25px;
+  transition: all 0.3s ease;
+  background-color: var(--input-bg-color, #fff);
+  color: var(--text-color, #2c3e50);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--primary-color, #3498db);
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+}
+
+.sendButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  margin-left: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.sendButton:hover {
+  background-color: var(--button-hover-color, rgba(52, 152, 219, 0.1));
+}
+
+.sendIcon {
+  color: var(--primary-color, #3498db);
+}
+
+/* Responsive design */
+@media (max-width: 1024px) {
+  .container {
+    flex-direction: column;
+  }
+
+  .chatWindow {
+    width: 100%;
+    max-width: none;
+    height: 50vh;
+  }
+
+  .gridContainer {
+    padding-right: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+
+  .title {
+    font-size: 2rem;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+========================================
+
+File: pages/Login.module.css
+----------------------------------------
+.container {
+    max-width: 400px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .title {
+    font-size: 1.5rem;
+    color: #2c3e50;
+    margin-bottom: 1.5rem;
+    text-align: center;
+  }
+  
+  .form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .input {
+    padding: 0.5rem;
+    font-size: 1rem;
+    border: 1px solid #bdc3c7;
+    border-radius: 4px;
   }
   
   .button {
     background-color: #3498db;
     color: white;
     border: none;
-    padding: 0.8rem 1.5rem;
+    padding: 0.5rem 1rem;
     font-size: 1rem;
-    border-radius: 5px;
+    border-radius: 4px;
     cursor: pointer;
     transition: background-color 0.3s ease;
   }
@@ -264,4 +1113,585 @@ File: pages/Home.module.css
   .button:hover {
     background-color: #2980b9;
   }
+========================================
+
+File: pages/Dashboard.module.css
+----------------------------------------
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.title {
+  font-size: 2.5rem;
+  color: var(--text-color, #2c3e50);
+  margin-bottom: 0.5rem;
+}
+
+.subtitle {
+  font-size: 1.2rem;
+  color: var(--secondary-text-color, #7f8c8d);
+  margin-bottom: 2rem;
+}
+
+.cardContainer {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.card {
+  background-color: var(--card-bg-color, #fff);
+  border-radius: 10px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.card h3 {
+  font-size: 1.1rem;
+  color: var(--secondary-text-color, #7f8c8d);
+  margin: 1rem 0 0.5rem;
+}
+
+.cardValue {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: var(--text-color, #2c3e50);
+}
+
+.chartContainer {
+  background-color: var(--card-bg-color, #fff);
+  border-radius: 10px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+}
+
+.chartHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.chartHeader h2 {
+  font-size: 1.5rem;
+  color: var(--text-color, #2c3e50);
+}
+
+.chartToggle {
+  display: flex;
+  gap: 1rem;
+}
+
+.chartToggle button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  color: var(--secondary-text-color, #7f8c8d);
+  transition: color 0.3s ease;
+}
+
+.chartToggle button.active {
+  color: var(--primary-color, #3498db);
+  font-weight: bold;
+}
+
+.recentAnalyses {
+  background-color: var(--card-bg-color, #fff);
+  border-radius: 10px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+}
+
+.recentAnalyses h2 {
+  font-size: 1.5rem;
+  color: var(--text-color, #2c3e50);
+  margin-bottom: 1rem;
+}
+
+.recentAnalyses ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+.recentAnalyses li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--border-color, #ecf0f1);
+}
+
+.recentAnalyses li:last-child {
+  border-bottom: none;
+}
+
+.recentAnalyses li span:first-child {
+  font-weight: bold;
+  color: var(--text-color, #2c3e50);
+}
+
+.recentAnalyses li span:nth-child(2) {
+  color: var(--secondary-text-color, #7f8c8d);
+}
+
+.viewMore {
+  display: flex;
+  align-items: center;
+  color: var(--primary-color, #3498db);
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.viewMore:hover {
+  color: var(--secondary-color, #2980b9);
+}
+
+.actionContainer {
+  text-align: center;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  background: linear-gradient(45deg, var(--primary-color, #3498db), var(--secondary-color, #2980b9));
+  color: white;
+  text-decoration: none;
+  padding: 0.8rem 1.5rem;
+  font-size: 1rem;
+  border-radius: 25px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+}
+
+.button svg {
+  margin-right: 0.5rem;
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+
+  .title {
+    font-size: 2rem;
+  }
+
+  .cardContainer {
+    grid-template-columns: 1fr;
+  }
+
+  .chartHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .chartToggle {
+    margin-top: 1rem;
+  }
+
+  .recentAnalyses li {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .viewMore {
+    margin-top: 0.5rem;
+  }
+}
+========================================
+
+File: pages/Home.js
+----------------------------------------
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { motion } from 'framer-motion';
+import { BarChart2, TrendingUp, DollarSign } from 'lucide-react';
+import styles from './Home.module.css';
+
+function Home() {
+  const { user } = useAuth();
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: { 
+      opacity: 1,
+      transition: { 
+        staggerChildren: 0.3
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: { 
+      y: 0, 
+      opacity: 1,
+      transition: { 
+        type: "spring",
+        stiffness: 100
+      }
+    }
+  };
+
+  return (
+    <motion.div 
+      className={styles.container}
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
+      <motion.h1 className={styles.title} variants={itemVariants}>
+        Welcome to 10-K Analyzer
+      </motion.h1>
+      <motion.p className={styles.subtitle} variants={itemVariants}>
+        Harness the power of AI to analyze 10-K reports and get data-driven investment recommendations.
+      </motion.p>
+      <motion.div className={styles.features} variants={itemVariants}>
+        <div className={styles.featureItem}>
+          <BarChart2 size={48} />
+          <h3>Advanced Analytics</h3>
+          <p>Dive deep into financial data with our cutting-edge AI analysis.</p>
+        </div>
+        <div className={styles.featureItem}>
+          <TrendingUp size={48} />
+          <h3>Predictive Insights</h3>
+          <p>Stay ahead of market trends with our AI-powered predictions.</p>
+        </div>
+        <div className={styles.featureItem}>
+          <DollarSign size={48} />
+          <h3>Investment Recommendations</h3>
+          <p>Get personalized investment advice based on thorough analysis.</p>
+        </div>
+      </motion.div>
+      <motion.div variants={itemVariants}>
+        {user ? (
+          <Link to="/dashboard" className={styles.button}>Go to Dashboard</Link>
+        ) : (
+          <Link to="/login" className={styles.button}>Get Started</Link>
+        )}
+      </motion.div>
+    </motion.div>
+  );
+}
+
+export default Home;
+========================================
+
+File: pages/Login.js
+----------------------------------------
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import styles from './Login.module.css';
+
+function Login() {
+  const [email, setEmail] = useState('user@example.com');
+  const [password, setPassword] = useState('password');
+  const navigate = useNavigate();
+  const { login, user } = useAuth();
+
+  useEffect(() => {
+    if (user) {
+      navigate('/dashboard');
+    }
+  }, [user, navigate]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    login(email, password);
+    navigate('/dashboard');
+  };
+
+  if (user) {
+    return null; // or a loading spinner
+  }
+
+  return (
+    <div className={styles.container}>
+      <h1 className={styles.title}>Login</h1>
+      <form onSubmit={handleSubmit} className={styles.form}>
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="Email"
+          className={styles.input}
+          required
+        />
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Password"
+          className={styles.input}
+          required
+        />
+        <button type="submit" className={styles.button}>Login</button>
+      </form>
+    </div>
+  );
+}
+
+export default Login;
+========================================
+
+File: pages/Dashboard.js
+----------------------------------------
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { motion, AnimatePresence } from 'framer-motion';
+import { BarChart2, TrendingUp, DollarSign, PieChart, Activity, ArrowRight } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import styles from './Dashboard.module.css';
+
+const mockData = [
+  { name: 'Jan', value: 4000 },
+  { name: 'Feb', value: 3000 },
+  { name: 'Mar', value: 5000 },
+  { name: 'Apr', value: 2780 },
+  { name: 'May', value: 1890 },
+  { name: 'Jun', value: 2390 },
+];
+
+const DashboardCard = ({ title, value, icon: Icon, color }) => (
+  <motion.div 
+    className={styles.card}
+    whileHover={{ scale: 1.05 }}
+    whileTap={{ scale: 0.95 }}
+  >
+    <Icon size={32} color={color} />
+    <h3>{title}</h3>
+    <p className={styles.cardValue}>{value}</p>
+  </motion.div>
+);
+
+function Dashboard() {
+  const { user } = useAuth();
+  const [selectedChart, setSelectedChart] = useState('performance');
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: { 
+      opacity: 1,
+      transition: { 
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: { 
+      y: 0, 
+      opacity: 1,
+      transition: { 
+        type: "spring",
+        stiffness: 100
+      }
+    }
+  };
+
+  return (
+    <motion.div 
+      className={styles.container}
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
+      <motion.h1 className={styles.title} variants={itemVariants}>Welcome to Your Dashboard</motion.h1>
+      <motion.p className={styles.subtitle} variants={itemVariants}>Hello, {user.email}!</motion.p>
+      
+      <motion.div className={styles.cardContainer} variants={itemVariants}>
+        <DashboardCard title="Portfolio Value" value="$250,000" icon={DollarSign} color="#3498db" />
+        <DashboardCard title="Total Gain" value="+15.4%" icon={TrendingUp} color="#2ecc71" />
+        <DashboardCard title="Assets" value="25" icon={PieChart} color="#e74c3c" />
+        <DashboardCard title="Risk Score" value="Moderate" icon={Activity} color="#f39c12" />
+      </motion.div>
+
+      <motion.div className={styles.chartContainer} variants={itemVariants}>
+        <div className={styles.chartHeader}>
+          <h2>Portfolio {selectedChart === 'performance' ? 'Performance' : 'Analysis'}</h2>
+          <div className={styles.chartToggle}>
+            <button 
+              className={selectedChart === 'performance' ? styles.active : ''}
+              onClick={() => setSelectedChart('performance')}
+            >
+              Performance
+            </button>
+            <button 
+              className={selectedChart === 'analysis' ? styles.active : ''}
+              onClick={() => setSelectedChart('analysis')}
+            >
+              Analysis
+            </button>
+          </div>
+        </div>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={selectedChart}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.5 }}
+          >
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={mockData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Line type="monotone" dataKey="value" stroke="#3498db" strokeWidth={2} />
+              </LineChart>
+            </ResponsiveContainer>
+          </motion.div>
+        </AnimatePresence>
+      </motion.div>
+
+      <motion.div className={styles.recentAnalyses} variants={itemVariants}>
+        <h2>Recent Analyses</h2>
+        <ul>
+          <li>
+            <span>Apple Inc. (AAPL)</span>
+            <span>Completed on Sept 5, 2024</span>
+            <Link to="/analysis/aapl" className={styles.viewMore}>
+              View <ArrowRight size={16} />
+            </Link>
+          </li>
+          <li>
+            <span>Tesla, Inc. (TSLA)</span>
+            <span>Completed on Sept 3, 2024</span>
+            <Link to="/analysis/tsla" className={styles.viewMore}>
+              View <ArrowRight size={16} />
+            </Link>
+          </li>
+          <li>
+            <span>Microsoft Corporation (MSFT)</span>
+            <span>Completed on Aug 30, 2024</span>
+            <Link to="/analysis/msft" className={styles.viewMore}>
+              View <ArrowRight size={16} />
+            </Link>
+          </li>
+        </ul>
+      </motion.div>
+
+      <motion.div className={styles.actionContainer} variants={itemVariants}>
+        <Link to="/analysis" className={styles.button}>
+          <BarChart2 size={20} />
+          <span>Start New Analysis</span>
+        </Link>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+export default Dashboard;
+========================================
+
+File: pages/Home.module.css
+----------------------------------------
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 4rem 2rem;
+  text-align: center;
+  min-height: calc(100vh - 64px); /* Adjust based on your header height */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.title {
+  font-size: 3.5rem;
+  color: #2c3e50;
+  margin-bottom: 1rem;
+  background: linear-gradient(45deg, #3498db, #2980b9);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 700;
+}
+
+.subtitle {
+  font-size: 1.5rem;
+  color: #34495e;
+  margin-bottom: 3rem;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.features {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 3rem;
+}
+
+.featureItem {
+  flex-basis: 30%;
+  padding: 2rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 15px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
+  transition: all 0.3s ease;
+}
+
+.featureItem:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 12px 40px rgba(31, 38, 135, 0.2);
+}
+
+.featureItem h3 {
+  font-size: 1.5rem;
+  color: #2c3e50;
+  margin: 1rem 0;
+}
+
+.featureItem p {
+  color: #7f8c8d;
+}
+
+.button {
+  display: inline-block;
+  background: linear-gradient(45deg, #3498db, #2980b9);
+  color: white;
+  text-decoration: none;
+  padding: 1rem 2rem;
+  font-size: 1.2rem;
+  border-radius: 50px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4);
+}
+
+.button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(52, 152, 219, 0.6);
+}
+
+@media (max-width: 768px) {
+  .features {
+    flex-direction: column;
+  }
+
+  .featureItem {
+    margin-bottom: 2rem;
+  }
+}
 ========================================

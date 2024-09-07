@@ -1,49 +1,197 @@
 .container {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.title {
+  font-size: 2.5rem;
+  color: var(--text-color, #2c3e50);
+  margin-bottom: 0.5rem;
+}
+
+.subtitle {
+  font-size: 1.2rem;
+  color: var(--secondary-text-color, #7f8c8d);
+  margin-bottom: 2rem;
+}
+
+.cardContainer {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.card {
+  background-color: var(--card-bg-color, #fff);
+  border-radius: 10px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.card h3 {
+  font-size: 1.1rem;
+  color: var(--secondary-text-color, #7f8c8d);
+  margin: 1rem 0 0.5rem;
+}
+
+.cardValue {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: var(--text-color, #2c3e50);
+}
+
+.chartContainer {
+  background-color: var(--card-bg-color, #fff);
+  border-radius: 10px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+}
+
+.chartHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.chartHeader h2 {
+  font-size: 1.5rem;
+  color: var(--text-color, #2c3e50);
+}
+
+.chartToggle {
+  display: flex;
+  gap: 1rem;
+}
+
+.chartToggle button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  color: var(--secondary-text-color, #7f8c8d);
+  transition: color 0.3s ease;
+}
+
+.chartToggle button.active {
+  color: var(--primary-color, #3498db);
+  font-weight: bold;
+}
+
+.recentAnalyses {
+  background-color: var(--card-bg-color, #fff);
+  border-radius: 10px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+}
+
+.recentAnalyses h2 {
+  font-size: 1.5rem;
+  color: var(--text-color, #2c3e50);
+  margin-bottom: 1rem;
+}
+
+.recentAnalyses ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+.recentAnalyses li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--border-color, #ecf0f1);
+}
+
+.recentAnalyses li:last-child {
+  border-bottom: none;
+}
+
+.recentAnalyses li span:first-child {
+  font-weight: bold;
+  color: var(--text-color, #2c3e50);
+}
+
+.recentAnalyses li span:nth-child(2) {
+  color: var(--secondary-text-color, #7f8c8d);
+}
+
+.viewMore {
+  display: flex;
+  align-items: center;
+  color: var(--primary-color, #3498db);
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.viewMore:hover {
+  color: var(--secondary-color, #2980b9);
+}
+
+.actionContainer {
+  text-align: center;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  background: linear-gradient(45deg, var(--primary-color, #3498db), var(--secondary-color, #2980b9));
+  color: white;
+  text-decoration: none;
+  padding: 0.8rem 1.5rem;
+  font-size: 1rem;
+  border-radius: 25px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+}
+
+.button svg {
+  margin-right: 0.5rem;
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
   }
-  
+
   .title {
     font-size: 2rem;
-    color: #2c3e50;
-    margin-bottom: 1rem;
   }
-  
-  .subtitle {
-    font-size: 1.2rem;
-    color: #34495e;
-    margin-bottom: 2rem;
+
+  .cardContainer {
+    grid-template-columns: 1fr;
   }
-  
-  .actionContainer {
-    margin-bottom: 2rem;
+
+  .chartHeader {
+    flex-direction: column;
+    align-items: flex-start;
   }
-  
-  .button {
-    display: inline-block;
-    background-color: #3498db;
-    color: white;
-    text-decoration: none;
-    padding: 0.5rem 1rem;
-    font-size: 1rem;
-    border-radius: 4px;
-    transition: background-color 0.3s ease;
+
+  .chartToggle {
+    margin-top: 1rem;
   }
-  
-  .button:hover {
-    background-color: #2980b9;
+
+  .recentAnalyses li {
+    flex-direction: column;
+    align-items: flex-start;
   }
-  
-  .recentAnalyses {
-    background-color: #fff;
-    padding: 1.5rem;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+  .viewMore {
+    margin-top: 0.5rem;
   }
-  
-  .recentAnalyses h2 {
-    font-size: 1.5rem;
-    color: #2c3e50;
-    margin-bottom: 1rem;
-  }
+}

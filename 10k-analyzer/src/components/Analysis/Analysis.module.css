@@ -1,0 +1,205 @@
+.container {
+  display: flex;
+  height: calc(100vh - 64px);
+  background-color: var(--bg-color, #f0f2f5);
+  overflow: hidden;
+  padding: 2rem;
+  gap: 2rem;
+}
+
+.gridContainer {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 2rem;
+}
+
+.title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 2rem;
+  color: var(--text-color, #2c3e50);
+  display: flex;
+  align-items: center;
+}
+
+.titleIcon {
+  margin-right: 1rem;
+  color: var(--primary-color, #3498db);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 2rem;
+  padding: 1rem;
+  background-color: var(--card-bg-color, rgba(255, 255, 255, 0.1));
+  border-radius: 15px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
+}
+
+.processingIndicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background-color: var(--card-bg-color, rgba(255, 255, 255, 0.2));
+  border-radius: 10px;
+  margin-top: 2rem;
+  backdrop-filter: blur(5px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+  margin-right: 1rem;
+  color: var(--primary-color, #3498db);
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Chat Window Styles */
+.chatWindow {
+  width: 35%;
+  min-width: 320px;
+  max-width: 420px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--card-bg-color, rgba(255, 255, 255, 0.1));
+  border-radius: 15px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.chatHeader {
+  background: linear-gradient(135deg, var(--primary-color, #3498db), var(--secondary-color, #2980b9));
+  color: white;
+  padding: 1.25rem;
+  display: flex;
+  align-items: center;
+}
+
+.chatIcon {
+  margin-right: 0.75rem;
+}
+
+.chatTitle {
+  font-size: 1.3rem;
+  margin: 0;
+  font-weight: 600;
+}
+
+.messageContainer {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.25rem;
+  background-color: var(--chat-bg-color, #f8f9fa);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.message {
+  max-width: 85%;
+  margin-bottom: 1.25rem;
+  padding: 1rem 1.25rem;
+  border-radius: 18px;
+  line-height: 1.5;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.message:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.user {
+  background: linear-gradient(135deg, var(--primary-color, #3498db), var(--secondary-color, #2980b9));
+  color: white;
+  align-self: flex-end;
+  margin-left: auto;
+}
+
+.ai {
+  background-color: var(--ai-message-color, #ecf0f1);
+  color: var(--text-color, #2c3e50);
+}
+
+.inputForm {
+  padding: 1.25rem;
+  background-color: var(--input-bg-color, #fff);
+  border-top: 1px solid var(--border-color, #e5e7eb);
+  display: flex;
+  align-items: center;
+}
+
+.input {
+  flex: 1;
+  padding: 1rem;
+  font-size: 1rem;
+  border: 2px solid var(--border-color, #bdc3c7);
+  border-radius: 25px;
+  transition: all 0.3s ease;
+  background-color: var(--input-bg-color, #fff);
+  color: var(--text-color, #2c3e50);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--primary-color, #3498db);
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+}
+
+.sendButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  margin-left: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.sendButton:hover {
+  background-color: var(--button-hover-color, rgba(52, 152, 219, 0.1));
+}
+
+.sendIcon {
+  color: var(--primary-color, #3498db);
+}
+
+/* Responsive design */
+@media (max-width: 1024px) {
+  .container {
+    flex-direction: column;
+  }
+
+  .chatWindow {
+    width: 100%;
+    max-width: none;
+    height: 50vh;
+  }
+
+  .gridContainer {
+    padding-right: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+
+  .title {
+    font-size: 2rem;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
