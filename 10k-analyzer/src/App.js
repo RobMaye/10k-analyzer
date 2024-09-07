@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
+import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import Home from './pages/Home';
@@ -9,8 +10,9 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import './App.css';
 
-function App() {
+function AppContent() {
   const canvasRef = useRef(null);
+  const { isDarkMode, theme } = useTheme();
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -40,7 +42,7 @@ function App() {
 
     const drawParticles = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = 'rgba(52, 152, 219, 0.5)';
+      ctx.fillStyle = isDarkMode ? 'rgba(255, 255, 255, 0.5)' : 'rgba(52, 152, 219, 0.5)';
       ctx.beginPath();
       for (let i = 0; i < particleCount; i++) {
         const p = particles[i];
@@ -72,12 +74,12 @@ function App() {
       window.removeEventListener('resize', resizeCanvas);
       cancelAnimationFrame(animationFrameId);
     };
-  }, []);
+  }, [isDarkMode]);
 
   return (
-    <AuthProvider>
-      <Router>
-        <div className="App">
+    <div className={`App ${isDarkMode ? 'dark' : 'light'}`} style={{ backgroundColor: theme.body, color: theme.text }}>
+      <AuthProvider>
+        <Router>
           <canvas ref={canvasRef} className="background-canvas" />
           <Layout>
             <Routes>
@@ -89,9 +91,17 @@ function App() {
               </Route>
             </Routes>
           </Layout>
-        </div>
-      </Router>
-    </AuthProvider>
+        </Router>
+      </AuthProvider>
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
   );
 }
 

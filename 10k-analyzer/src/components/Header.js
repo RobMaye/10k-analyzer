@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import styles from './Header.module.css';
 import { Home, BarChart2, LogOut, LogIn } from 'lucide-react';
+import ThemeToggle from './ThemeToggle';
 
 function Header() {
   const { user, logout } = useAuth();
@@ -52,6 +53,7 @@ function Header() {
           )}
         </ul>
       </nav>
+      <ThemeToggle />
     </header>
   );
 }

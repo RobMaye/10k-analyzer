@@ -24,15 +24,24 @@
 }
 
 .card {
-  background-color: var(--card-bg-color, #fff);
-  border-radius: 10px;
+  background-color: var(--card-background);
+  border-radius: var(--glassmorphism-radius);
   padding: 1.5rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--glassmorphism-shadow);
+  backdrop-filter: blur(4px);
+  border: var(--glassmorphism-border);
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
   transition: all 0.3s ease;
+  transform-style: preserve-3d;
+  perspective: 1000px;
+}
+
+.card:hover {
+  transform: rotateX(5deg) rotateY(5deg) scale(1.05);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
 }
 
 .card h3 {

@@ -18,8 +18,22 @@ body {
   --secondary-color: #2980b9;
   --text-color: #2c3e50;
   --background-color: #f5f6fa;
-  --card-background: #ffffff;
+  --card-background: rgba(255, 255, 255, 0.7);
   --shadow-color: rgba(0, 0, 0, 0.1);
+  --glassmorphism-bg: rgba(255, 255, 255, 0.1);
+  --glassmorphism-border: 1px solid rgba(255, 255, 255, 0.18);
+  --glassmorphism-radius: 15px;
+  --glassmorphism-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+}
+
+.dark-mode {
+  --primary-color: #3498db;
+  --secondary-color: #2980b9;
+  --text-color: #ecf0f1;
+  --background-color: #2c3e50;
+  --card-background: rgba(52, 73, 94, 0.7);
+  --shadow-color: rgba(0, 0, 0, 0.2);
+  --glassmorphism-bg: rgba(52, 73, 94, 0.1);
 }
 
 /* Smooth scrolling for the entire page */
@@ -43,4 +57,15 @@ html {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--secondary-color);
+}
+
+.theme-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: inherit;
+}
+
+.dark {
+  color-scheme: dark;
 }

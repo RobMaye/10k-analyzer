@@ -89,3 +89,31 @@
 .float-animation {
   animation: float 4s ease-in-out infinite;
 }
+
+:root {
+  --body-bg: #F0F2F5;
+  --text-color: #2C3E50;
+  --primary-color: #3498DB;
+  --secondary-color: #2980B9;
+  --card-bg: #FFFFFF;
+  --border-color: #E5E7EB;
+}
+
+.dark {
+  --body-bg: #1F2937;
+  --text-color: #F3F4F6;
+  --primary-color: #60A5FA;
+  --secondary-color: #3B82F6;
+  --card-bg: #374151;
+  --border-color: #4B5563;
+}
+
+body {
+  background-color: var(--body-bg);
+  color: var(--text-color);
+}
+
+.card {
+  background-color: var(--card-bg);
+  border-color: var(--border-color);
+}
