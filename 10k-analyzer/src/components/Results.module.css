@@ -1,0 +1,38 @@
+.container {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .title {
+    font-size: 1.5rem;
+    color: #2c3e50;
+    margin-bottom: 1rem;
+  }
+  
+  .resultItem {
+    margin-bottom: 1rem;
+  }
+  
+  .resultItem strong {
+    color: #34495e;
+  }
+  
+  .resultItem ul {
+    margin-top: 0.5rem;
+    padding-left: 1.5rem;
+  }
+  
+  .recommendation {
+    margin-top: 1.5rem;
+    font-size: 1.2rem;
+    color: #2980b9;
+  }
+
+  .chartContainer {
+    margin-top: 2rem;
+    margin-bottom: 2rem;
+    height: 300px;
+  }
