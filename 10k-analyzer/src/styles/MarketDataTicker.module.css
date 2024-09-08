@@ -1,0 +1,42 @@
+.tickerContainer {
+  width: 100%;
+  height: 40px;
+  overflow: hidden;
+  background-color: var(--card-bg);
+  padding: 0.5rem 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.ticker {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  white-space: nowrap;
+}
+
+.tickerItem {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 2rem;
+}
+
+.symbol {
+  font-weight: bold;
+  margin-right: 0.5rem;
+}
+
+.price {
+  margin-right: 0.5rem;
+}
+
+.change {
+  font-weight: bold;
+}
+
+.positive {
+  color: #4caf50;
+}
+
+.negative {
+  color: #f44336;
+}

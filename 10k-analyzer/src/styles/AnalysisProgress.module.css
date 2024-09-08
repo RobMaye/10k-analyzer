@@ -1,0 +1,56 @@
+.progressContainer {
+    background-color: var(--card-bg);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .progressContainer h3 {
+    margin-bottom: 1rem;
+    color: var(--text-color);
+  }
+  
+  .progressBar {
+    height: 8px;
+    background-color: var(--border-color);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+  }
+  
+  .progressFill {
+    height: 100%;
+    background-color: var(--primary-color);
+  }
+  
+  .stagesContainer {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 1rem;
+  }
+  
+  .stage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 0.8rem;
+    color: var(--secondary-text-color);
+  }
+  
+  .stage.active {
+    color: var(--primary-color);
+  }
+  
+  .completedStage {
+    color: var(--success-color, #4caf50);
+  }
+  
+  .loadingStage {
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }

@@ -11,27 +11,62 @@ src/
     App.js
     contexts/
         AuthContext.js
+        MarketDataContext.js
+        NotificationContext.js
+        AIContext.js
         ThemeContext.js
     utils/
+        visualizationHelper.js
+        aiHelper.js
+        marketDataSimulator.js
         analysisHelpers.js
     styles/
+        MarketDataTicker.module.css
+        Chat.module.css
+        NotificationListView.module.css
+        UserProfileUpdate.module.css
+        AnalysisProgress.module.css
+        AIAdvisor.module.css
         theme.js
+        ExpandableResponse.module.css
+        NotificationSystem.module.css
     components/
         Layout.js
         Results.js
         Header.js
+        NotificationListView.js
         Results.module.css
         ThemeToggle.js
+        NotificationSystem.js
         Header.module.css
         ProtectedRoute.js
+        MarketDataTicker.js
         Analysis/
             ChatWindow.js
             Analysis.js
             AnalysisCard.js
             Analysis.module.css
+        AIAnalysis/
+            AnalysisProgress.js
+            AnalysisResult.js
+        Dashboard/
+            QuickChatWidget.js
+        AIChat/
+            MessageBubble.js
+            ExpandableResponse.js
+            UserProfileUpdate.js
+            ChatInterface.js
+            Sidebar/
+                ActionPanel.js
+                ContextPanel.js
+                VisualizationPanel.js
+    hooks/
+        useAIAnalysis.js
+        useResizeObserver.js
     pages/
         Login.module.css
         Dashboard.module.css
+        AIAdvisor.js
         Home.js
         Login.js
         Dashboard.js
@@ -297,109 +332,44 @@ import '@testing-library/jest-dom';
 
 File: App.js
 ----------------------------------------
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
-import { ThemeProvider, useTheme } from './contexts/ThemeContext';
+import { ThemeProvider } from './contexts/ThemeContext';
+import { AIProvider } from './contexts/AIContext';
+import { MarketDataProvider } from './contexts/MarketDataContext';
+import { NotificationProvider } from './contexts/NotificationContext';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import Home from './pages/Home';
-import InteractiveAnalysis from './components/Analysis/Analysis';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import AIAdvisor from './pages/AIAdvisor';
 import './App.css';
-
-function AppContent() {
-  const canvasRef = useRef(null);
-  const { isDarkMode, theme } = useTheme();
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    let animationFrameId;
-
-    const resizeCanvas = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-
-    window.addEventListener('resize', resizeCanvas);
-    resizeCanvas();
-
-    const particles = [];
-    const particleCount = 100;
-
-    for (let i = 0; i < particleCount; i++) {
-      particles.push({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        radius: Math.random() * 2 + 1,
-        dx: (Math.random() - 0.5) * 0.5,
-        dy: (Math.random() - 0.5) * 0.5,
-      });
-    }
-
-    const drawParticles = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = isDarkMode ? 'rgba(255, 255, 255, 0.5)' : 'rgba(52, 152, 219, 0.5)';
-      ctx.beginPath();
-      for (let i = 0; i < particleCount; i++) {
-        const p = particles[i];
-        ctx.moveTo(p.x, p.y);
-        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2, true);
-      }
-      ctx.fill();
-      moveParticles();
-    };
-
-    const moveParticles = () => {
-      for (let i = 0; i < particleCount; i++) {
-        const p = particles[i];
-        p.x += p.dx;
-        p.y += p.dy;
-        if (p.x < 0 || p.x > canvas.width) p.dx = -p.dx;
-        if (p.y < 0 || p.y > canvas.height) p.dy = -p.dy;
-      }
-    };
-
-    const animate = () => {
-      drawParticles();
-      animationFrameId = requestAnimationFrame(animate);
-    };
-
-    animate();
-
-    return () => {
-      window.removeEventListener('resize', resizeCanvas);
-      cancelAnimationFrame(animationFrameId);
-    };
-  }, [isDarkMode]);
-
-  return (
-    <div className={`App ${isDarkMode ? 'dark' : 'light'}`} style={{ backgroundColor: theme.body, color: theme.text }}>
-      <AuthProvider>
-        <Router>
-          <canvas ref={canvasRef} className="background-canvas" />
-          <Layout>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/login" element={<Login />} />
-              <Route element={<ProtectedRoute />}>
-                <Route path="/analysis" element={<InteractiveAnalysis />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-              </Route>
-            </Routes>
-          </Layout>
-        </Router>
-      </AuthProvider>
-    </div>
-  );
-}
 
 function App() {
   return (
     <ThemeProvider>
-      <AppContent />
+      <AuthProvider>
+        <AIProvider>
+          <MarketDataProvider>
+            <NotificationProvider>
+              <Router>
+                <Layout>
+                  <Routes>
+                    <Route path="/" element={<Home />} />
+                    <Route path="/login" element={<Login />} />
+                    <Route element={<ProtectedRoute />}>
+                      <Route path="/dashboard" element={<Dashboard />} />
+                      <Route path="/ai-advisor" element={<AIAdvisor />} />
+                    </Route>
+                  </Routes>
+                </Layout>
+              </Router>
+            </NotificationProvider>
+          </MarketDataProvider>
+        </AIProvider>
+      </AuthProvider>
     </ThemeProvider>
   );
 }
@@ -443,6 +413,179 @@ export function useAuth() {
 }
 ========================================
 
+File: contexts/MarketDataContext.js
+----------------------------------------
+import React, { createContext, useState, useEffect } from 'react';
+import { generateMarketData } from '../utils/marketDataSimulator';
+
+export const MarketDataContext = createContext();
+
+export const MarketDataProvider = ({ children }) => {
+  const [marketData, setMarketData] = useState([]);
+
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      setMarketData(generateMarketData());
+    }, 5000);
+
+    return () => clearInterval(intervalId);
+  }, []);
+
+  return (
+    <MarketDataContext.Provider value={{ marketData }}>
+      {children}
+    </MarketDataContext.Provider>
+  );
+};
+========================================
+
+File: contexts/NotificationContext.js
+----------------------------------------
+import React, { createContext, useState, useCallback } from 'react';
+
+export const NotificationContext = createContext();
+
+export const NotificationProvider = ({ children }) => {
+  const [notifications, setNotifications] = useState([]);
+
+  const addNotification = useCallback((notification) => {
+    setNotifications(prevNotifications => [
+      { id: Date.now(), ...notification, read: false },
+      ...prevNotifications
+    ]);
+  }, []);
+
+  const removeNotification = useCallback((id) => {
+    setNotifications(prevNotifications =>
+      prevNotifications.filter(notification => notification.id !== id)
+    );
+  }, []);
+
+  const markAsRead = useCallback((id) => {
+    setNotifications(prevNotifications =>
+      prevNotifications.map(notification =>
+        notification.id === id ? { ...notification, read: true } : notification
+      )
+    );
+  }, []);
+
+  return (
+    <NotificationContext.Provider value={{ notifications, addNotification, removeNotification, markAsRead }}>
+      {children}
+    </NotificationContext.Provider>
+  );
+};
+========================================
+
+File: contexts/AIContext.js
+----------------------------------------
+import React, { createContext, useContext, useState, useCallback } from 'react';
+
+const AIContext = createContext();
+
+export function AIProvider({ children }) {
+  const [messages, setMessages] = useState([]);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  const dummyResponses = {
+    "Analyze AAPL stock": {
+      response: "Based on recent performance, AAPL stock shows strong growth potential. The company's innovative product line and solid financials make it an attractive investment option.",
+      reasoningProcess: {
+        "Data Collection": [
+          "Gathered historical stock price data",
+          "Analyzed financial statements",
+          "Reviewed market trends and competitor analysis"
+        ],
+        "Financial Analysis": {
+          "Revenue Growth": "15% year-over-year",
+          "Profit Margins": "Stable at 21%",
+          "Debt-to-Equity Ratio": "Improved from 1.2 to 0.8"
+        },
+        "Market Position": [
+          "Leader in smartphone market",
+          "Growing services segment",
+          "Strong brand loyalty"
+        ],
+        "Risk Assessment": [
+          "Potential supply chain disruptions",
+          "Regulatory challenges in certain markets",
+          "Intense competition in the tech sector"
+        ],
+        "Conclusion": "Overall positive outlook based on financial strength and market position"
+      }
+    },
+    "Compare TSLA and F stocks": {
+      response: "TSLA has shown higher volatility and growth potential, while F offers more stability and dividends. TSLA is focused on electric vehicles, while F is transitioning its lineup. Consider your risk tolerance when choosing between them.",
+      reasoningProcess: {
+        "Comparative Analysis": {
+          "Market Cap": "TSLA: $600B, F: $50B",
+          "P/E Ratio": "TSLA: 100, F: 15",
+          "Revenue Growth": "TSLA: 40%, F: 10%"
+        },
+        "Business Model": {
+          "TSLA": ["Pure EV play", "Tech-focused", "Direct sales model"],
+          "F": ["Traditional automaker", "Transitioning to EVs", "Dealer network"]
+        },
+        "Risk Factors": {
+          "TSLA": ["High valuation", "Production scalability", "Increasing competition"],
+          "F": ["Legacy costs", "Slower EV transition", "Debt levels"]
+        },
+        "Investment Profile": {
+          "TSLA": "High growth, high risk",
+          "F": "Value stock with dividend yield"
+        },
+        "Conclusion": "Choice depends on investor's risk tolerance and investment goals"
+      }
+    },
+    // Add more dummy responses with reasoning processes here
+  };
+
+  const sendMessage = useCallback(async (text) => {
+    const userMessage = { text, sender: 'user' };
+    setMessages(prevMessages => [...prevMessages, userMessage]);
+
+    setIsAnalyzing(true);
+    
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    let aiResponse;
+    if (text in dummyResponses) {
+      aiResponse = dummyResponses[text];
+    } else {
+      aiResponse = {
+        response: "I'm sorry, I don't have specific information about that. Is there anything else I can help you with regarding financial analysis or investment strategies?",
+        reasoningProcess: {
+          "Query Analysis": "Unable to match query with predefined responses",
+          "Fallback Action": "Provide generic response and offer further assistance"
+        }
+      };
+    }
+
+    setIsAnalyzing(false);
+
+    const aiMessage = { text: aiResponse.response, sender: 'ai', reasoningProcess: aiResponse.reasoningProcess };
+    setMessages(prevMessages => [...prevMessages, aiMessage]);
+  }, []);
+
+  const value = {
+    messages,
+    sendMessage,
+    isAnalyzing
+  };
+
+  return <AIContext.Provider value={value}>{children}</AIContext.Provider>;
+}
+
+export function useAI() {
+  const context = useContext(AIContext);
+  if (!context) {
+    throw new Error('useAI must be used within an AIProvider');
+  }
+  return context;
+}
+========================================
+
 File: contexts/ThemeContext.js
 ----------------------------------------
 // src/contexts/ThemeContext.js
@@ -477,6 +620,48 @@ export const ThemeProvider = ({ children }) => {
 export const useTheme = () => useContext(ThemeContext);
 ========================================
 
+File: utils/visualizationHelper.js
+----------------------------------------
+
+========================================
+
+File: utils/aiHelper.js
+----------------------------------------
+
+========================================
+
+File: utils/marketDataSimulator.js
+----------------------------------------
+// src/utils/marketDataSimulator.js
+
+const initialStocks = [
+    { symbol: 'AAPL', name: 'Apple Inc.' },
+    { symbol: 'GOOGL', name: 'Alphabet Inc.' },
+    { symbol: 'MSFT', name: 'Microsoft Corporation' },
+    { symbol: 'AMZN', name: 'Amazon.com Inc.' },
+    { symbol: 'FB', name: 'Facebook, Inc.' },
+    { symbol: 'TSLA', name: 'Tesla, Inc.' },
+    { symbol: 'NFLX', name: 'Netflix, Inc.' },
+    { symbol: 'NVDA', name: 'NVIDIA Corporation' },
+  ];
+  
+  const generateRandomChange = () => {
+    return (Math.random() - 0.5) * 5; // Random change between -2.5% and 2.5%
+  };
+  
+  export const generateMarketData = () => {
+    return initialStocks.map(stock => {
+      const change = generateRandomChange();
+      const price = Math.max(50 + Math.random() * 450 + change, 0.01); // Ensure price is always positive
+      return {
+        ...stock,
+        price: parseFloat(price.toFixed(2)),
+        change: parseFloat(change.toFixed(2))
+      };
+    });
+  };
+========================================
+
 File: utils/analysisHelpers.js
 ----------------------------------------
 export const processMessage = (message) => {
@@ -495,6 +680,525 @@ export const processMessage = (message) => {
       }, 5000);
     });
   };
+========================================
+
+File: styles/MarketDataTicker.module.css
+----------------------------------------
+.tickerContainer {
+  width: 100%;
+  height: 40px;
+  overflow: hidden;
+  background-color: var(--card-bg);
+  padding: 0.5rem 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.ticker {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  white-space: nowrap;
+}
+
+.tickerItem {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 2rem;
+}
+
+.symbol {
+  font-weight: bold;
+  margin-right: 0.5rem;
+}
+
+.price {
+  margin-right: 0.5rem;
+}
+
+.change {
+  font-weight: bold;
+}
+
+.positive {
+  color: #4caf50;
+}
+
+.negative {
+  color: #f44336;
+}
+========================================
+
+File: styles/Chat.module.css
+----------------------------------------
+.chatInterface {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background-color: var(--chat-bg-color, #f8f9fa);
+  }
+  
+  .messageList {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .messageBubble {
+    display: flex;
+    margin-bottom: 1rem;
+    max-width: 80%;
+  }
+  
+  .messageBubble.ai {
+    margin-right: auto;
+  }
+  
+  .messageBubble.user {
+    margin-left: auto;
+    flex-direction: row-reverse;
+  }
+  
+  .avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: var(--primary-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 0.5rem;
+  }
+  
+  .avatar svg {
+    color: white;
+  }
+  
+  .messageContent {
+    background-color: var(--card-bg);
+    border-radius: 1rem;
+    padding: 0.75rem 1rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+  }
+  
+  .messageContent:hover {
+    box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+  }
+  
+  .ai .messageContent {
+    background-color: var(--primary-color);
+    color: white;
+  }
+  
+  .inputForm {
+    display: flex;
+    padding: 1rem;
+    background-color: var(--card-bg);
+    border-top: 1px solid var(--border-color);
+  }
+  
+  .input {
+    flex-grow: 1;
+    padding: 0.75rem;
+    border: 2px solid var(--border-color);
+    border-radius: 1.5rem;
+    font-size: 1rem;
+    margin-right: 0.5rem;
+    transition: all 0.3s ease;
+  }
+  
+  .input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+  }
+  
+  .sendButton {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .sendButton:hover {
+    background-color: var(--secondary-color);
+  }
+  
+  .sendButton:disabled {
+    background-color: var(--border-color);
+    cursor: not-allowed;
+  }
+  
+  .spinner {
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  .suggestionContainer {
+    padding: 1rem;
+    background-color: var(--card-bg);
+    border-top: 1px solid var(--border-color);
+  }
+  
+  .suggestionContainer p {
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+    color: var(--text-color);
+  }
+  
+  .suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  
+  .suggestionButton {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 1rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .suggestionButton:hover {
+    background-color: var(--secondary-color);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+========================================
+
+File: styles/NotificationListView.module.css
+----------------------------------------
+.notificationList {
+    position: absolute;
+    top: 60px;
+    right: 20px;
+    width: 300px;
+    max-height: 400px;
+    overflow-y: auto;
+    background-color: var(--card-bg);
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+  }
+  
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px;
+    border-bottom: 1px solid var(--border-color);
+  }
+  
+  .header h3 {
+    margin: 0;
+  }
+  
+  .header button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-color);
+  }
+  
+  .emptyMessage {
+    padding: 15px;
+    text-align: center;
+    color: var(--secondary-text-color);
+  }
+  
+  .notification {
+    padding: 15px;
+    border-bottom: 1px solid var(--border-color);
+    cursor: pointer;
+  }
+  
+  .notification:last-child {
+    border-bottom: none;
+  }
+  
+  .notification h4 {
+    margin: 0 0 5px 0;
+  }
+  
+  .notification p {
+    margin: 0;
+    font-size: 0.9em;
+    color: var(--secondary-text-color);
+  }
+  
+  .notification button {
+    margin-top: 10px;
+    background: none;
+    border: none;
+    color: var(--primary-color);
+    cursor: pointer;
+  }
+  
+  .unread {
+    background-color: var(--unread-bg, rgba(52, 152, 219, 0.1));
+  }
+  
+  .read {
+    opacity: 0.7;
+  }
+========================================
+
+File: styles/UserProfileUpdate.module.css
+----------------------------------------
+.profileForm {
+    background-color: var(--card-bg);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .profileForm h3 {
+    margin-bottom: 1rem;
+    color: var(--text-color);
+  }
+  
+  .formGroup {
+    margin-bottom: 1rem;
+  }
+  
+  .formGroup label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--text-color);
+  }
+  
+  .formGroup select {
+    width: 100%;
+    padding: 0.5rem;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+    background-color: var(--input-bg);
+    color: var(--text-color);
+  }
+  
+  .profileForm button {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  .profileForm button:hover {
+    background-color: var(--secondary-color);
+  }
+========================================
+
+File: styles/AnalysisProgress.module.css
+----------------------------------------
+.progressContainer {
+    background-color: var(--card-bg);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .progressContainer h3 {
+    margin-bottom: 1rem;
+    color: var(--text-color);
+  }
+  
+  .progressBar {
+    height: 8px;
+    background-color: var(--border-color);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+  }
+  
+  .progressFill {
+    height: 100%;
+    background-color: var(--primary-color);
+  }
+  
+  .stagesContainer {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 1rem;
+  }
+  
+  .stage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 0.8rem;
+    color: var(--secondary-text-color);
+  }
+  
+  .stage.active {
+    color: var(--primary-color);
+  }
+  
+  .completedStage {
+    color: var(--success-color, #4caf50);
+  }
+  
+  .loadingStage {
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+========================================
+
+File: styles/AIAdvisor.module.css
+----------------------------------------
+.aiAdvisorContainer {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 137px); /* Adjusted for header height */
+  overflow: hidden;
+}
+
+.mainContent {
+  display: flex;
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.sidebar {
+  width: 300px;
+  background-color: var(--card-bg);
+  border-right: 1px solid var(--border-color);
+  overflow-y: auto;
+  transition: width 0.3s ease;
+}
+
+.sidebar.closed {
+  width: 0;
+}
+
+.toggleButton {
+  position: absolute;
+  top: 10px;
+  left: 300px;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  transition: left 0.3s ease;
+}
+
+.sidebar.closed + .toggleButton {
+  left: 10px;
+}
+
+.chatContainer {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+  transition: margin-left 0.3s ease;
+}
+
+.panelTitle {
+  font-size: 1.2rem;
+  margin-bottom: 1rem;
+  color: var(--text-color);
+}
+
+.contextPanel, .visualizationPanel, .actionPanel {
+  padding: 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.profileItem {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.profileItem svg {
+  margin-right: 0.5rem;
+  color: var(--primary-color);
+}
+
+.actionList {
+  list-style-type: none;
+  padding: 0;
+}
+
+.actionItem {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.actionItem svg {
+  margin-right: 0.5rem;
+}
+
+.recommendationIcon {
+  color: var(--success-color, #2ecc71);
+}
+
+.alertIcon {
+  color: var(--warning-color, #f39c12);
+}
+
+@media (max-width: 768px) {
+  .mainContent {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    height: 50%;
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .sidebar.closed {
+    height: 0;
+  }
+
+  .toggleButton {
+    top: auto;
+    bottom: 10px;
+    left: 10px !important;
+  }
+
+  .chatContainer {
+    height: 50%;
+    margin-left: 0 !important;
+  }
+}
 ========================================
 
 File: styles/theme.js
@@ -516,6 +1220,109 @@ export const lightTheme = {
     card: '#374151',
     border: '#4B5563',
   };
+========================================
+
+File: styles/ExpandableResponse.module.css
+----------------------------------------
+.expandableResponse {
+  background-color: var(--card-bg);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.response {
+  margin-bottom: 1rem;
+  line-height: 1.5;
+}
+
+.toggleButton {
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  font-size: 0.9rem;
+  padding: 0.5rem 0;
+  margin-top: 0.5rem;
+}
+
+.toggleButton svg {
+  margin-right: 0.25rem;
+}
+
+.reasoningProcess {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.reasoningProcess h3 {
+  margin-bottom: 1rem;
+  color: var(--primary-color);
+}
+
+.reasoningProcess h4 {
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  color: var(--secondary-color);
+}
+
+.reasoningProcess ul {
+  padding-left: 1.5rem;
+}
+
+.reasoningProcess li {
+  margin-bottom: 0.5rem;
+}
+========================================
+
+File: styles/NotificationSystem.module.css
+----------------------------------------
+.notificationContainer {
+  position: fixed;
+  top: 70px; /* Adjust based on your navbar height */
+  right: 20px;
+  z-index: 1000;
+  max-width: 300px;
+  width: 100%;
+}
+
+.notification {
+  background-color: var(--card-bg);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: flex-start;
+}
+  
+  .notificationContent {
+    flex-grow: 1;
+  }
+  
+  .notificationContent h4 {
+    margin: 0 0 0.5rem;
+    color: var(--text-color);
+  }
+  
+  .notificationContent p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--secondary-text-color);
+  }
+  
+  .closeButton {
+    background: none;
+    border: none;
+    color: var(--text-color);
+    cursor: pointer;
+    padding: 0;
+    margin-left: 0.5rem;
+  }
 ========================================
 
 File: components/Layout.js
@@ -592,15 +1399,21 @@ export default Results;
 
 File: components/Header.js
 ----------------------------------------
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import styles from './Header.module.css';
-import { Home, BarChart2, LogOut, LogIn } from 'lucide-react';
+import { Home, BarChart2, LogOut, LogIn, MessageCircle, Bell } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
+import NotificationListView from './NotificationListView';
 
 function Header() {
   const { user, logout } = useAuth();
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  const toggleNotifications = () => {
+    setShowNotifications(!showNotifications);
+  };
 
   return (
     <header className={styles.header}>
@@ -616,7 +1429,7 @@ function Header() {
               <span>Home</span>
             </Link>
           </li>
-          {user ? (
+          {user && (
             <>
               <li>
                 <Link to="/dashboard" className={styles.navLink}>
@@ -625,9 +1438,9 @@ function Header() {
                 </Link>
               </li>
               <li>
-                <Link to="/analysis" className={styles.navLink}>
-                  <BarChart2 className={styles.navIcon} />
-                  <span>Analysis</span>
+                <Link to="/ai-advisor" className={styles.navLink}>
+                  <MessageCircle className={styles.navIcon} />
+                  <span>AI Advisor</span>
                 </Link>
               </li>
               <li>
@@ -637,7 +1450,8 @@ function Header() {
                 </button>
               </li>
             </>
-          ) : (
+          )}
+          {!user && (
             <li>
               <Link to="/login" className={styles.navLink}>
                 <LogIn className={styles.navIcon} />
@@ -647,12 +1461,64 @@ function Header() {
           )}
         </ul>
       </nav>
-      <ThemeToggle />
+      <div className={styles.rightSection}>
+        <button onClick={toggleNotifications} className={styles.notificationButton}>
+          <Bell className={styles.navIcon} />
+        </button>
+        <ThemeToggle />
+      </div>
+      {showNotifications && <NotificationListView onClose={() => setShowNotifications(false)} />}
     </header>
   );
 }
 
 export default Header;
+========================================
+
+File: components/NotificationListView.js
+----------------------------------------
+import React, { useContext } from 'react';
+import { motion } from 'framer-motion';
+import { X } from 'lucide-react';
+import { NotificationContext } from '../contexts/NotificationContext';
+import styles from '../styles/NotificationListView.module.css';
+
+const NotificationListView = ({ onClose }) => {
+  const { notifications, removeNotification, markAsRead } = useContext(NotificationContext);
+
+  return (
+    <motion.div 
+      className={styles.notificationList}
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+    >
+      <div className={styles.header}>
+        <h3>Notifications</h3>
+        <button onClick={onClose}><X size={20} /></button>
+      </div>
+      {notifications.length === 0 ? (
+        <p className={styles.emptyMessage}>No notifications</p>
+      ) : (
+        <ul>
+          {notifications.map((notification) => (
+            <li 
+              key={notification.id} 
+              className={`${styles.notification} ${notification.read ? styles.read : styles.unread}`}
+              onClick={() => markAsRead(notification.id)}
+            >
+              <h4>{notification.title}</h4>
+              <p>{notification.message}</p>
+              <button onClick={() => removeNotification(notification.id)}>Dismiss</button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </motion.div>
+  );
+};
+
+export default NotificationListView;
 ========================================
 
 File: components/Results.module.css
@@ -716,6 +1582,48 @@ const ThemeToggle = () => {
 export default ThemeToggle;
 ========================================
 
+File: components/NotificationSystem.js
+----------------------------------------
+import React, { useContext } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X } from 'lucide-react';
+import { NotificationContext } from '../contexts/NotificationContext';
+import styles from '../styles/NotificationSystem.module.css';
+
+const NotificationSystem = () => {
+  const { notifications, removeNotification } = useContext(NotificationContext);
+
+  return (
+    <div className={styles.notificationContainer}>
+      <AnimatePresence>
+        {notifications.map((notification) => (
+          <motion.div
+            key={notification.id}
+            className={styles.notification}
+            initial={{ opacity: 0, y: 50, scale: 0.3 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.5, transition: { duration: 0.2 } }}
+          >
+            <div className={styles.notificationContent}>
+              <h4>{notification.title}</h4>
+              <p>{notification.message}</p>
+            </div>
+            <button
+              className={styles.closeButton}
+              onClick={() => removeNotification(notification.id)}
+            >
+              <X size={18} />
+            </button>
+          </motion.div>
+        ))}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+export default NotificationSystem;
+========================================
+
 File: components/Header.module.css
 ----------------------------------------
 .header {
@@ -739,44 +1647,80 @@ File: components/Header.module.css
   margin-right: 0.5rem;
 }
 
+.nav {
+  flex-grow: 1;
+  display: flex;
+  justify-content: center;
+}
+
 .nav ul {
   list-style-type: none;
   display: flex;
+  align-items: center;
   gap: 1.5rem;
   margin: 0;
   padding: 0;
 }
 
-.navLink, .logoutButton {
+.navLink, .logoutButton, .notificationButton {
   color: white;
   text-decoration: none;
   display: flex;
   align-items: center;
   transition: all 0.3s ease;
   font-weight: 500;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 4px;
 }
 
 .navIcon {
   margin-right: 0.5rem;
 }
 
-.navLink:hover, .logoutButton:hover {
-  color: #ecf0f1;
+.navLink:hover, .logoutButton:hover, .notificationButton:hover {
+  background-color: rgba(255, 255, 255, 0.1);
   transform: translateY(-2px);
 }
 
 .logoutButton {
-  background: none;
-  border: none;
-  cursor: pointer;
   font-size: 1rem;
-  padding: 0;
+}
+
+.rightSection {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.notificationButton {
+  position: relative;
+  padding: 0.5rem;
+}
+
+.notificationButton .navIcon {
+  margin-right: 0;
+}
+
+.notificationCount {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background-color: #e74c3c;
+  color: white;
+  border-radius: 50%;
+  padding: 2px 6px;
+  font-size: 0.75rem;
+  font-weight: bold;
 }
 
 @media (max-width: 768px) {
   .header {
     flex-direction: column;
     align-items: flex-start;
+    padding: 1rem;
   }
 
   .nav {
@@ -786,7 +1730,14 @@ File: components/Header.module.css
 
   .nav ul {
     flex-direction: column;
+    align-items: flex-start;
     gap: 1rem;
+  }
+
+  .rightSection {
+    margin-top: 1rem;
+    width: 100%;
+    justify-content: flex-end;
   }
 }
 ========================================
@@ -808,6 +1759,40 @@ function ProtectedRoute() {
 }
 
 export default ProtectedRoute;
+========================================
+
+File: components/MarketDataTicker.js
+----------------------------------------
+import React, { useContext } from 'react';
+import { motion } from 'framer-motion';
+import { MarketDataContext } from '../contexts/MarketDataContext';
+import styles from '../styles/MarketDataTicker.module.css';
+
+const MarketDataTicker = () => {
+  const { marketData } = useContext(MarketDataContext);
+
+  return (
+    <div className={styles.tickerContainer}>
+      <motion.div
+        className={styles.ticker}
+        animate={{ x: [0, -1000] }}
+        transition={{ repeat: Infinity, duration: 20, ease: 'linear' }}
+      >
+        {marketData.map((item, index) => (
+          <div key={index} className={styles.tickerItem}>
+            <span className={styles.symbol}>{item.symbol}</span>
+            <span className={styles.price}>${item.price.toFixed(2)}</span>
+            <span className={`${styles.change} ${item.change >= 0 ? styles.positive : styles.negative}`}>
+              {item.change >= 0 ? '+' : ''}{item.change.toFixed(2)}%
+            </span>
+          </div>
+        ))}
+      </motion.div>
+    </div>
+  );
+};
+
+export default MarketDataTicker;
 ========================================
 
 File: components/Analysis/ChatWindow.js
@@ -1239,6 +2224,502 @@ body {
 }
 ========================================
 
+File: components/AIAnalysis/AnalysisProgress.js
+----------------------------------------
+import React from 'react';
+import { motion } from 'framer-motion';
+import { Loader } from 'lucide-react';
+import styles from '../../styles/AnalysisProgress.module.css';
+
+const AnalysisProgress = ({ progress, stage }) => {
+  const stages = ['Data Collection', 'Processing', 'Analysis', 'Generating Report'];
+
+  return (
+    <div className={styles.progressContainer}>
+      <h3>Analysis in Progress</h3>
+      <div className={styles.progressBar}>
+        <motion.div
+          className={styles.progressFill}
+          initial={{ width: 0 }}
+          animate={{ width: `${progress}%` }}
+          transition={{ duration: 0.5 }}
+        />
+      </div>
+      <p>{progress.toFixed(0)}% Complete</p>
+      <div className={styles.stagesContainer}>
+        {stages.map((s, index) => (
+          <div key={index} className={`${styles.stage} ${index <= stages.indexOf(stage) ? styles.active : ''}`}>
+            {index < stages.indexOf(stage) ? (
+              <span className={styles.completedStage}>✓</span>
+            ) : index === stages.indexOf(stage) ? (
+              <Loader className={styles.loadingStage} />
+            ) : null}
+            <span>{s}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export default AnalysisProgress;
+========================================
+
+File: components/AIAnalysis/AnalysisResult.js
+----------------------------------------
+
+========================================
+
+File: components/Dashboard/QuickChatWidget.js
+----------------------------------------
+
+========================================
+
+File: components/AIChat/MessageBubble.js
+----------------------------------------
+import React from 'react';
+import { User, Bot } from 'lucide-react';
+import styles from '../../styles/Chat.module.css';
+
+function MessageBubble({ message }) {
+  const { text, sender } = message;
+  const isAI = sender === 'ai';
+
+  return (
+    <div className={`${styles.messageBubble} ${isAI ? styles.ai : styles.user}`}>
+      <div className={styles.avatar}>
+        {isAI ? <Bot size={24} /> : <User size={24} />}
+      </div>
+      <div className={styles.messageContent}>
+        <p>{text}</p>
+      </div>
+    </div>
+  );
+}
+
+export default MessageBubble;
+========================================
+
+File: components/AIChat/ExpandableResponse.js
+----------------------------------------
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronDown, ChevronUp } from 'lucide-react';
+import styles from '../../styles/ExpandableResponse.module.css';
+
+const ExpandableResponse = ({ response, reasoningProcess }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const renderReasoningProcess = (process) => {
+    if (typeof process === 'string') {
+      return <p>{process}</p>;
+    }
+    if (Array.isArray(process)) {
+      return (
+        <ul>
+          {process.map((item, index) => (
+            <li key={index}>{renderReasoningProcess(item)}</li>
+          ))}
+        </ul>
+      );
+    }
+    if (typeof process === 'object') {
+      return (
+        <div>
+          {Object.entries(process).map(([key, value]) => (
+            <div key={key}>
+              <h4>{key}</h4>
+              {renderReasoningProcess(value)}
+            </div>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
+
+  return (
+    <div className={styles.expandableResponse}>
+      <div className={styles.response}>{response}</div>
+      <motion.button
+        className={styles.toggleButton}
+        onClick={() => setIsExpanded(!isExpanded)}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+      >
+        {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+        {isExpanded ? 'Hide Reasoning Process' : 'Show Reasoning Process'}
+      </motion.button>
+      <AnimatePresence>
+        {isExpanded && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3 }}
+            className={styles.reasoningProcess}
+          >
+            <h3>Reasoning Process</h3>
+            {renderReasoningProcess(reasoningProcess)}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+export default ExpandableResponse;
+========================================
+
+File: components/AIChat/UserProfileUpdate.js
+----------------------------------------
+import React, { useState } from 'react';
+import { motion } from 'framer-motion';
+import styles from '../../styles/UserProfileUpdate.module.css';
+
+const UserProfileUpdate = ({ currentProfile, onUpdate }) => {
+  const [profile, setProfile] = useState(currentProfile);
+
+  const handleChange = (e) => {
+    setProfile({ ...profile, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onUpdate(profile);
+  };
+
+  return (
+    <motion.form
+      className={styles.profileForm}
+      onSubmit={handleSubmit}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
+      <h3>Update Your Investment Profile</h3>
+      <div className={styles.formGroup}>
+        <label htmlFor="riskTolerance">Risk Tolerance</label>
+        <select
+          id="riskTolerance"
+          name="riskTolerance"
+          value={profile.riskTolerance}
+          onChange={handleChange}
+        >
+          <option value="low">Low</option>
+          <option value="medium">Medium</option>
+          <option value="high">High</option>
+        </select>
+      </div>
+      <div className={styles.formGroup}>
+        <label htmlFor="investmentGoal">Primary Investment Goal</label>
+        <select
+          id="investmentGoal"
+          name="investmentGoal"
+          value={profile.investmentGoal}
+          onChange={handleChange}
+        >
+          <option value="growth">Growth</option>
+          <option value="income">Income</option>
+          <option value="balanced">Balanced</option>
+        </select>
+      </div>
+      <motion.button
+        type="submit"
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+      >
+        Update Profile
+      </motion.button>
+    </motion.form>
+  );
+};
+
+export default UserProfileUpdate;
+========================================
+
+File: components/AIChat/ChatInterface.js
+----------------------------------------
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Send, Loader } from 'lucide-react';
+import MessageBubble from './MessageBubble';
+import ExpandableResponse from './ExpandableResponse';
+import { useAI } from '../../contexts/AIContext';
+import styles from '../../styles/Chat.module.css';
+
+function ChatInterface() {
+  const [input, setInput] = useState('');
+  const { messages, sendMessage, isAnalyzing } = useAI();
+  const messagesEndRef = useRef(null);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (input.trim()) {
+      sendMessage(input);
+      setInput('');
+    }
+  };
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(scrollToBottom, [messages]);
+
+  const dummyCommands = [
+    "Analyze AAPL stock",
+    "Compare TSLA and F stocks",
+    "Show me the S&P 500 performance",
+    "What's my portfolio risk?",
+    "Recommend dividend stocks"
+  ];
+
+  return (
+    <div className={styles.chatInterface}>
+      <div className={styles.messageList}>
+        <AnimatePresence>
+          {messages.map((msg, index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              {msg.sender === 'ai' ? (
+                <ExpandableResponse
+                  response={msg.text}
+                  reasoningProcess={msg.reasoningProcess}
+                />
+              ) : (
+                <MessageBubble message={msg} />
+              )}
+            </motion.div>
+          ))}
+        </AnimatePresence>
+        <div ref={messagesEndRef} />
+      </div>
+      <motion.form 
+        onSubmit={handleSubmit} 
+        className={styles.inputForm}
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.3, duration: 0.5 }}
+      >
+        <input
+          type="text"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Ask your financial question..."
+          className={styles.input}
+        />
+        <motion.button 
+          type="submit" 
+          className={styles.sendButton}
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          disabled={isAnalyzing}
+        >
+          {isAnalyzing ? <Loader className={styles.spinner} /> : <Send size={20} />}
+        </motion.button>
+      </motion.form>
+      <div className={styles.suggestionContainer}>
+        <p>Try asking:</p>
+        <div className={styles.suggestions}>
+          {dummyCommands.map((command, index) => (
+            <motion.button
+              key={index}
+              className={styles.suggestionButton}
+              onClick={() => sendMessage(command)}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              {command}
+            </motion.button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default ChatInterface;
+========================================
+
+File: components/AIChat/Sidebar/ActionPanel.js
+----------------------------------------
+import React from 'react';
+import { CheckCircle, AlertCircle } from 'lucide-react';
+import styles from '../../../styles/AIAdvisor.module.css';
+
+function ActionPanel() {
+  // This is placeholder data. In a real application, these would be dynamically generated based on the AI's analysis.
+  const actions = [
+    { type: 'recommendation', text: 'Consider diversifying your portfolio with more international stocks.' },
+    { type: 'alert', text: 'Your tech sector allocation is above your risk threshold.' },
+    { type: 'recommendation', text: 'Review your retirement contributions to maximize tax benefits.' },
+  ];
+
+  return (
+    <div className={styles.actionPanel}>
+      <h3 className={styles.panelTitle}>Insights & Actions</h3>
+      <ul className={styles.actionList}>
+        {actions.map((action, index) => (
+          <li key={index} className={styles.actionItem}>
+            {action.type === 'recommendation' ? (
+              <CheckCircle size={20} className={styles.recommendationIcon} />
+            ) : (
+              <AlertCircle size={20} className={styles.alertIcon} />
+            )}
+            <span>{action.text}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+export default ActionPanel;
+========================================
+
+File: components/AIChat/Sidebar/ContextPanel.js
+----------------------------------------
+import React from 'react';
+import { User, TrendingUp, AlertTriangle } from 'lucide-react';
+import { useAuth } from '../../../contexts/AuthContext';
+import styles from '../../../styles/AIAdvisor.module.css';
+
+function ContextPanel() {
+  const { user } = useAuth();
+  // In a real application, you'd fetch this data from a user profile or derive it from conversation history
+  const userContext = {
+    riskTolerance: 'Moderate',
+    investmentGoals: ['Long-term growth', 'Retirement planning'],
+    preferredSectors: ['Technology', 'Healthcare']
+  };
+
+  return (
+    <div className={styles.contextPanel}>
+      <h3 className={styles.panelTitle}>Your Profile</h3>
+      <div className={styles.profileItem}>
+        <User size={20} />
+        <span>{user.email}</span>
+      </div>
+      <div className={styles.profileItem}>
+        <AlertTriangle size={20} />
+        <span>Risk Tolerance: {userContext.riskTolerance}</span>
+      </div>
+      <div className={styles.profileItem}>
+        <TrendingUp size={20} />
+        <span>Investment Goals:</span>
+        <ul>
+          {userContext.investmentGoals.map((goal, index) => (
+            <li key={index}>{goal}</li>
+          ))}
+        </ul>
+      </div>
+      <div className={styles.profileItem}>
+        <span>Preferred Sectors:</span>
+        <ul>
+          {userContext.preferredSectors.map((sector, index) => (
+            <li key={index}>{sector}</li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+export default ContextPanel;
+========================================
+
+File: components/AIChat/Sidebar/VisualizationPanel.js
+----------------------------------------
+import React from 'react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useResizeObserver } from '../../../hooks/useResizeObserver';
+import styles from '../../../styles/AIAdvisor.module.css';
+
+function VisualizationPanel() {
+  const [ref, dimensions] = useResizeObserver();
+
+  // This is placeholder data. In a real application, this would be dynamically generated based on the conversation.
+  const data = [
+    { name: 'Jan', value: 4000 },
+    { name: 'Feb', value: 3000 },
+    { name: 'Mar', value: 5000 },
+    { name: 'Apr', value: 2780 },
+    { name: 'May', value: 1890 },
+    { name: 'Jun', value: 2390 },
+  ];
+
+  return (
+    <div className={styles.visualizationPanel} ref={ref}>
+      <h3 className={styles.panelTitle}>Market Trends</h3>
+      {dimensions && (
+        <ResponsiveContainer width="100%" height={200}>
+          <LineChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="name" />
+            <YAxis />
+            <Tooltip />
+            <Line type="monotone" dataKey="value" stroke="#8884d8" />
+          </LineChart>
+        </ResponsiveContainer>
+      )}
+    </div>
+  );
+}
+
+export default VisualizationPanel;
+========================================
+
+File: hooks/useAIAnalysis.js
+----------------------------------------
+
+========================================
+
+File: hooks/useResizeObserver.js
+----------------------------------------
+import { useEffect, useRef, useState } from 'react';
+
+export const useResizeObserver = () => {
+  const [dimensions, setDimensions] = useState(null);
+  const resizeObserver = useRef(null);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    resizeObserver.current = new ResizeObserver((entries) => {
+      if (!Array.isArray(entries) || !entries.length) {
+        return;
+      }
+
+      const entry = entries[0];
+
+      if (entry.contentRect) {
+        setDimensions(entry.contentRect);
+      } else {
+        const { width, height } = entry.target.getBoundingClientRect();
+        setDimensions({ width, height });
+      }
+    });
+
+    if (ref.current) {
+      resizeObserver.current.observe(ref.current);
+    }
+
+    return () => {
+      if (resizeObserver.current) {
+        resizeObserver.current.disconnect();
+      }
+    };
+  }, []);
+
+  return [ref, dimensions];
+};
+========================================
+
 File: pages/Login.module.css
 ----------------------------------------
 .container {
@@ -1496,6 +2977,92 @@ File: pages/Dashboard.module.css
 }
 ========================================
 
+File: pages/AIAdvisor.js
+----------------------------------------
+import React, { useState, useEffect, useContext } from 'react';
+import { motion } from 'framer-motion';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import ChatInterface from '../components/AIChat/ChatInterface';
+import ContextPanel from '../components/AIChat/Sidebar/ContextPanel';
+import VisualizationPanel from '../components/AIChat/Sidebar/VisualizationPanel';
+import ActionPanel from '../components/AIChat/Sidebar/ActionPanel';
+import MarketDataTicker from '../components/MarketDataTicker';
+import NotificationSystem from '../components/NotificationSystem';
+import { NotificationContext } from '../contexts/NotificationContext';
+import styles from '../styles/AIAdvisor.module.css';
+
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.log('Error caught by ErrorBoundary:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return <h1>Something went wrong.</h1>;
+    }
+
+    return this.props.children;
+  }
+}
+
+function AIAdvisor() {
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const { addNotification } = useContext(NotificationContext);
+
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+
+  useEffect(() => {
+    addNotification({
+      title: "Welcome to AI Advisor",
+      message: "This is a test notification to demonstrate the system."
+    });
+  }, [addNotification]);
+
+  return (
+    <div className={styles.aiAdvisorContainer}>
+      <MarketDataTicker />
+      <NotificationSystem />
+      <div className={styles.mainContent}>
+        <motion.div
+          className={`${styles.sidebar} ${sidebarOpen ? '' : styles.closed}`}
+          animate={{ width: sidebarOpen ? 300 : 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <ErrorBoundary>
+            <ContextPanel />
+            <VisualizationPanel />
+            <ActionPanel />
+          </ErrorBoundary>
+        </motion.div>
+        <div className={styles.chatContainer}>
+          <ChatInterface />
+        </div>
+        <button 
+          className={styles.toggleButton}
+          onClick={toggleSidebar}
+          style={{ left: sidebarOpen ? '300px' : '0' }}
+        >
+          {sidebarOpen ? <ChevronLeft size={24} /> : <ChevronRight size={24} />}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export default AIAdvisor;
+========================================
+
 File: pages/Home.js
 ----------------------------------------
 import React, { useState, useEffect, useRef } from 'react';
@@ -1505,10 +3072,68 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { BarChart2, TrendingUp, DollarSign, ChevronDown } from 'lucide-react';
 import styles from './Home.module.css';
 
+const BackgroundCanvas = () => {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    let animationFrameId;
+    let dots = [];
+
+    const resizeCanvas = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      initDots();
+    };
+
+    const initDots = () => {
+      const dotCount = Math.floor((canvas.width * canvas.height) / 8000);
+      dots = Array(dotCount).fill().map(() => ({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        radius: Math.random() * 2 + 1,
+        vx: (Math.random() - 0.5) * 0.5,
+        vy: (Math.random() - 0.5) * 0.5,
+      }));
+    };
+
+    const drawDots = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = 'rgba(52, 152, 219, 0.2)';
+      dots.forEach(dot => {
+        ctx.beginPath();
+        ctx.arc(dot.x, dot.y, dot.radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        dot.x += dot.vx;
+        dot.y += dot.vy;
+
+        if (dot.x < 0) dot.x = canvas.width;
+        if (dot.x > canvas.width) dot.x = 0;
+        if (dot.y < 0) dot.y = canvas.height;
+        if (dot.y > canvas.height) dot.y = 0;
+      });
+
+      animationFrameId = requestAnimationFrame(drawDots);
+    };
+
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+    drawDots();
+
+    return () => {
+      window.removeEventListener('resize', resizeCanvas);
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, []);
+
+  return <canvas ref={canvasRef} className={styles.backgroundCanvas} />;
+};
+
 function Home() {
   const { user } = useAuth();
   const [expandedFeature, setExpandedFeature] = useState(null);
-  const canvasRef = useRef(null);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -1553,114 +3178,65 @@ function Home() {
     }
   ];
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    let animationFrameId;
-
-    const resizeCanvas = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-
-    window.addEventListener('resize', resizeCanvas);
-    resizeCanvas();
-
-    const dots = Array(50).fill().map(() => ({
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height,
-      radius: Math.random() * 2 + 1,
-      vx: (Math.random() - 0.5) * 2,
-      vy: (Math.random() - 0.5) * 2,
-    }));
-
-    const drawDots = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = 'rgba(52, 152, 219, 0.2)';
-      dots.forEach(dot => {
-        ctx.beginPath();
-        ctx.arc(dot.x, dot.y, dot.radius, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Update position
-        dot.x += dot.vx;
-        dot.y += dot.vy;
-
-        // Wrap around the screen
-        if (dot.x < 0) dot.x = canvas.width;
-        if (dot.x > canvas.width) dot.x = 0;
-        if (dot.y < 0) dot.y = canvas.height;
-        if (dot.y > canvas.height) dot.y = 0;
-      });
-
-      animationFrameId = requestAnimationFrame(drawDots);
-    };
-
-    drawDots();
-
-    return () => {
-      window.removeEventListener('resize', resizeCanvas);
-      cancelAnimationFrame(animationFrameId);
-    };
-  }, []);
-
   return (
-    <motion.div 
-      className={styles.container}
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-    >
-      <canvas ref={canvasRef} className={styles.backgroundCanvas} />
-      <motion.h1 className={styles.title} variants={itemVariants}>
-        Welcome to 10-K Analyzer
-      </motion.h1>
-      <motion.p className={styles.subtitle} variants={itemVariants}>
-        Harness the power of AI to analyze 10-K reports and get data-driven investment recommendations.
-      </motion.p>
-      <motion.div className={styles.features} variants={itemVariants}>
-        {features.map((feature, index) => (
-          <motion.div 
-            key={index}
-            className={`${styles.featureItem} ${expandedFeature === index ? styles.active : ''}`}
-            onClick={() => setExpandedFeature(expandedFeature === index ? null : index)}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <feature.icon size={48} className={styles.featureIcon} />
-            <h3>{feature.title}</h3>
-            <p>{feature.description}</p>
-            <AnimatePresence>
-              {expandedFeature === index && (
-                <motion.div 
-                  className={styles.featureDetails}
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <p>{feature.details}</p>
-                </motion.div>
-              )}
-            </AnimatePresence>
-            <ChevronDown 
-              className={`${styles.chevron} ${expandedFeature === index ? styles.rotated : ''}`} 
-              size={24} 
-            />
-          </motion.div>
-        ))}
+    <>
+      <BackgroundCanvas />
+      <motion.div 
+        className={styles.container}
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        <motion.h1 className={styles.title} variants={itemVariants}>
+          Welcome to 10-K Analyzer
+        </motion.h1>
+        <motion.p className={styles.subtitle} variants={itemVariants}>
+          Harness the power of AI to analyze 10-K reports and get data-driven investment recommendations.
+        </motion.p>
+        <motion.div className={styles.features} variants={itemVariants}>
+          {features.map((feature, index) => (
+            <motion.div 
+              key={index}
+              className={`${styles.featureItem} ${expandedFeature === index ? styles.active : ''}`}
+              onClick={() => setExpandedFeature(expandedFeature === index ? null : index)}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <feature.icon size={48} className={styles.featureIcon} />
+              <h3>{feature.title}</h3>
+              <p>{feature.description}</p>
+              <AnimatePresence>
+                {expandedFeature === index && (
+                  <motion.div 
+                    className={styles.featureDetails}
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <p>{feature.details}</p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              <ChevronDown 
+                className={`${styles.chevron} ${expandedFeature === index ? styles.rotated : ''}`} 
+                size={24} 
+              />
+            </motion.div>
+          ))}
+        </motion.div>
+        <motion.div variants={itemVariants} className={styles.ctaContainer}>
+          {user ? (
+            <Link to="/dashboard" className={styles.button}>Go to Dashboard</Link>
+          ) : (
+            <>
+              <Link to="/login" className={styles.button}>Get Started</Link>
+              <Link to="/demo" className={styles.secondaryButton}>View Demo</Link>
+            </>
+          )}
+        </motion.div>
       </motion.div>
-      <motion.div variants={itemVariants} className={styles.ctaContainer}>
-        {user ? (
-          <Link to="/dashboard" className={styles.button}>Go to Dashboard</Link>
-        ) : (
-          <>
-            <Link to="/login" className={styles.button}>Get Started</Link>
-            <Link to="/demo" className={styles.secondaryButton}>View Demo</Link>
-          </>
-        )}
-      </motion.div>
-    </motion.div>
+    </>
   );
 }
 
@@ -1880,8 +3456,19 @@ export default Dashboard;
 
 File: pages/Home.module.css
 ----------------------------------------
+.backgroundCanvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+  pointer-events: none;
+}
+
 .container {
   position: relative;
+  z-index: 1;
   max-width: 1200px;
   margin: 0 auto;
   padding: 4rem 2rem;
@@ -1890,16 +3477,6 @@ File: pages/Home.module.css
   display: flex;
   flex-direction: column;
   justify-content: center;
-  overflow: hidden;
-}
-
-.backgroundCanvas {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: -1;
 }
 
 .title {
@@ -1925,10 +3502,12 @@ File: pages/Home.module.css
   display: flex;
   justify-content: space-around;
   margin-bottom: 3rem;
+  flex-wrap: wrap;
 }
 
 .featureItem {
-  flex-basis: 30%;
+  flex-basis: calc(33.333% - 2rem);
+  margin: 1rem;
   padding: 2rem;
   background: rgba(255, 255, 255, 0.8);
   border-radius: 15px;
@@ -1956,7 +3535,7 @@ File: pages/Home.module.css
 }
 
 .featureIcon {
-  color: var(--primary-color);
+  color: #3498db;
   margin-bottom: 1rem;
 }
 
@@ -2003,29 +3582,57 @@ File: pages/Home.module.css
 .secondaryButton {
   display: inline-block;
   background: transparent;
-  color: var(--primary-color);
+  color: #3498db;
   text-decoration: none;
   padding: 1rem 2rem;
   font-size: 1.2rem;
   border-radius: 50px;
-  border: 2px solid var(--primary-color);
+  border: 2px solid #3498db;
   transition: all 0.3s ease;
 }
 
 .secondaryButton:hover {
-  background: var(--primary-color);
+  background: #3498db;
   color: white;
   transform: translateY(-3px);
   box-shadow: 0 6px 20px rgba(52, 152, 219, 0.6);
 }
 
+@media (max-width: 1024px) {
+  .featureItem {
+    flex-basis: calc(50% - 2rem);
+  }
+}
+
 @media (max-width: 768px) {
+  .container {
+    padding: 2rem 1rem;
+  }
+
+  .title {
+    font-size: 2.5rem;
+  }
+
+  .subtitle {
+    font-size: 1.2rem;
+  }
+
   .features {
     flex-direction: column;
   }
 
   .featureItem {
-    margin-bottom: 2rem;
+    flex-basis: 100%;
+    margin: 1rem 0;
+  }
+
+  .ctaContainer {
+    flex-direction: column;
+  }
+
+  .button,
+  .secondaryButton {
+    width: 100%;
   }
 }
 ========================================

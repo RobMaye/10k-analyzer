@@ -1,0 +1,128 @@
+.aiAdvisorContainer {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 137px); /* Adjusted for header height */
+  overflow: hidden;
+}
+
+.mainContent {
+  display: flex;
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.sidebar {
+  width: 300px;
+  background-color: var(--card-bg);
+  border-right: 1px solid var(--border-color);
+  overflow-y: auto;
+  transition: width 0.3s ease;
+}
+
+.sidebar.closed {
+  width: 0;
+}
+
+.toggleButton {
+  position: absolute;
+  top: 10px;
+  left: 300px;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  transition: left 0.3s ease;
+}
+
+.sidebar.closed + .toggleButton {
+  left: 10px;
+}
+
+.chatContainer {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+  transition: margin-left 0.3s ease;
+}
+
+.panelTitle {
+  font-size: 1.2rem;
+  margin-bottom: 1rem;
+  color: var(--text-color);
+}
+
+.contextPanel, .visualizationPanel, .actionPanel {
+  padding: 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.profileItem {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.profileItem svg {
+  margin-right: 0.5rem;
+  color: var(--primary-color);
+}
+
+.actionList {
+  list-style-type: none;
+  padding: 0;
+}
+
+.actionItem {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.actionItem svg {
+  margin-right: 0.5rem;
+}
+
+.recommendationIcon {
+  color: var(--success-color, #2ecc71);
+}
+
+.alertIcon {
+  color: var(--warning-color, #f39c12);
+}
+
+@media (max-width: 768px) {
+  .mainContent {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    height: 50%;
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .sidebar.closed {
+    height: 0;
+  }
+
+  .toggleButton {
+    top: auto;
+    bottom: 10px;
+    left: 10px !important;
+  }
+
+  .chatContainer {
+    height: 50%;
+    margin-left: 0 !important;
+  }
+}

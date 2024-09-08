@@ -1,0 +1,151 @@
+.chatInterface {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background-color: var(--chat-bg-color, #f8f9fa);
+  }
+  
+  .messageList {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .messageBubble {
+    display: flex;
+    margin-bottom: 1rem;
+    max-width: 80%;
+  }
+  
+  .messageBubble.ai {
+    margin-right: auto;
+  }
+  
+  .messageBubble.user {
+    margin-left: auto;
+    flex-direction: row-reverse;
+  }
+  
+  .avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: var(--primary-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 0.5rem;
+  }
+  
+  .avatar svg {
+    color: white;
+  }
+  
+  .messageContent {
+    background-color: var(--card-bg);
+    border-radius: 1rem;
+    padding: 0.75rem 1rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+  }
+  
+  .messageContent:hover {
+    box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+  }
+  
+  .ai .messageContent {
+    background-color: var(--primary-color);
+    color: white;
+  }
+  
+  .inputForm {
+    display: flex;
+    padding: 1rem;
+    background-color: var(--card-bg);
+    border-top: 1px solid var(--border-color);
+  }
+  
+  .input {
+    flex-grow: 1;
+    padding: 0.75rem;
+    border: 2px solid var(--border-color);
+    border-radius: 1.5rem;
+    font-size: 1rem;
+    margin-right: 0.5rem;
+    transition: all 0.3s ease;
+  }
+  
+  .input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+  }
+  
+  .sendButton {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .sendButton:hover {
+    background-color: var(--secondary-color);
+  }
+  
+  .sendButton:disabled {
+    background-color: var(--border-color);
+    cursor: not-allowed;
+  }
+  
+  .spinner {
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  .suggestionContainer {
+    padding: 1rem;
+    background-color: var(--card-bg);
+    border-top: 1px solid var(--border-color);
+  }
+  
+  .suggestionContainer p {
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+    color: var(--text-color);
+  }
+  
+  .suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  
+  .suggestionButton {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 1rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .suggestionButton:hover {
+    background-color: var(--secondary-color);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
